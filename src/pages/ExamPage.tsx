@@ -11,7 +11,10 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  EyeOff
+  EyeOff,
+  FileText,
+  Edit,
+  ArrowLeft
 } from 'lucide-react';
 import { RootState } from '../store';
 import { 
@@ -51,6 +54,8 @@ const ExamPage: React.FC = () => {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
   const [examCompleted, setExamCompleted] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<string | null>(null);
 
   // Timer effect
   useEffect(() => {
@@ -119,6 +124,15 @@ const ExamPage: React.FC = () => {
         e.preventDefault();
         return false;
       }
+
+      // Keyboard navigation
+      if (!showReview) {
+        if (e.key === 'ArrowLeft' && currentQuestionIndex > 0) {
+          dispatch(setCurrentQuestion(currentQuestionIndex - 1));
+        } else if (e.key === 'ArrowRight' && currentQuestionIndex < sessionQuestions.length - 1) {
+          dispatch(setCurrentQuestion(currentQuestionIndex + 1));
+        }
+      }
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -143,7 +157,7 @@ const ExamPage: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleContextMenu);
     };
-  }, [currentSession, examCompleted, tabSwitchCount, isFullscreen]);
+  }, [currentSession, examCompleted, tabSwitchCount, isFullscreen, showReview, currentQuestionIndex, sessionQuestions.length, dispatch]);
 
   const currentQuestion = sessionQuestions[currentQuestionIndex];
   const totalQuestions = sessionQuestions.length;
@@ -190,6 +204,32 @@ const ExamPage: React.FC = () => {
     }
   };
 
+  const handleQuestionNavigation = (index: number) => {
+    if (showReview) {
+      setEditingQuestion(sessionQuestions[index].id);
+      setShowReview(false);
+    }
+    dispatch(setCurrentQuestion(index));
+  };
+
+  const handleReviewAnswers = () => {
+    setShowReview(true);
+  };
+
+  const handleBackToExam = () => {
+    setShowReview(false);
+    setEditingQuestion(null);
+  };
+
+  const handleEditQuestion = (questionId: string) => {
+    const questionIndex = sessionQuestions.findIndex(q => q.id === questionId);
+    if (questionIndex !== -1) {
+      dispatch(setCurrentQuestion(questionIndex));
+      setShowReview(false);
+      setEditingQuestion(questionId);
+    }
+  };
+
   const handleCompleteExam = useCallback(async () => {
     if (!currentSession || examCompleted) return;
 
@@ -231,6 +271,24 @@ const ExamPage: React.FC = () => {
   const getProgressPercentage = () => {
     const answeredQuestions = Object.keys(answers).length;
     return (answeredQuestions / totalQuestions) * 100;
+  };
+
+  const getQuestionStatus = (questionId: string, index: number) => {
+    const hasAnswer = answers[questionId] && answers[questionId].length > 0;
+    const isViewed = index <= currentQuestionIndex || showReview;
+    
+    if (hasAnswer) return 'answered';
+    if (isViewed) return 'viewed';
+    return 'unvisited';
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'answered': return 'bg-robotic-green text-white';
+      case 'viewed': return 'bg-yellow-500 text-black';
+      case 'unvisited': return 'bg-primary-gray text-primary-white';
+      default: return 'bg-primary-gray text-primary-white';
+    }
   };
 
   if (loading) {
@@ -304,13 +362,13 @@ const ExamPage: React.FC = () => {
 
       {/* Exam Header */}
       <div className="bg-primary-black border-b border-primary-gray/30 p-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+        <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-primary-white">
               {currentCertification?.name}
             </h1>
             <p className="text-primary-gray text-sm">
-              Question {currentQuestionIndex + 1} of {totalQuestions}
+              {showReview ? 'Review Your Answers' : `Question ${currentQuestionIndex + 1} of ${totalQuestions}`}
             </p>
           </div>
           
@@ -336,166 +394,453 @@ const ExamPage: React.FC = () => {
               </span>
             </div>
             
-            {/* Submit Button */}
-            <Button 
-              variant="danger" 
-              onClick={handleCompleteExam}
-              disabled={examCompleted}
-            >
-              <Flag size={16} />
-              Submit Exam
-            </Button>
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {!showReview ? (
+                <Button 
+                  variant="secondary" 
+                  onClick={handleReviewAnswers}
+                  disabled={examCompleted}
+                >
+                  <FileText size={16} />
+                  Review Answers
+                </Button>
+              ) : (
+                <Button 
+                  variant="secondary" 
+                  onClick={handleBackToExam}
+                >
+                  <ArrowLeft size={16} />
+                  Back to Exam
+                </Button>
+              )}
+              
+              <Button 
+                variant="danger" 
+                onClick={handleCompleteExam}
+                disabled={examCompleted}
+              >
+                <Flag size={16} />
+                Submit Exam
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Exam Content */}
-      <div className="max-w-4xl mx-auto p-6">
-        <Card>
-          <motion.div
-            key={currentQuestion.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Question */}
-            <div className="mb-8">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="w-8 h-8 bg-primary-orange/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-primary-orange font-bold text-sm">
-                    {currentQuestionIndex + 1}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-primary-white mb-2">
-                    {currentQuestion.question_text}
-                  </h2>
-                  
-                  {/* Question Image */}
-                  {currentQuestion.question_image_url && (
-                    <div className="mb-4">
-                      <img
-                        src={currentQuestion.question_image_url}
-                        alt="Question illustration"
-                        className="max-w-full h-auto rounded-lg border border-primary-gray/30"
-                        style={{ maxHeight: '300px' }}
-                      />
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center gap-4 text-sm text-primary-gray">
-                    <span>Difficulty: Level {currentQuestion.difficulty}</span>
-                    <span>•</span>
-                    <span>Points: {currentQuestion.points || 1}</span>
-                    <span>•</span>
-                    <span className="capitalize">
-                      {currentQuestion.question_type.replace('_', ' ')}
-                    </span>
-                    {currentQuestion.question_type === 'multiple_answer' && (
-                      <>
-                        <span>•</span>
-                        <span className="text-primary-orange">Select all that apply</span>
-                      </>
-                    )}
+      {/* Main Content Area */}
+      <div className="flex h-[calc(100vh-80px)]">
+        {/* Examination Area (Left Panel - 80%) */}
+        <div className="flex-1 p-6 overflow-y-auto">
+          {showReview ? (
+            /* Review Mode */
+            <div className="max-w-4xl mx-auto space-y-6">
+              <Card className="bg-primary-orange/10 border-primary-orange/30">
+                <div className="flex items-center gap-3 mb-4">
+                  <FileText size={24} className="text-primary-orange" />
+                  <div>
+                    <h2 className="text-xl font-bold text-primary-white">Review Your Answers</h2>
+                    <p className="text-primary-gray">
+                      Review all questions and your selected answers before final submission
+                    </p>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Answer Options */}
-            <div className="space-y-3 mb-8">
-              {currentQuestion.answer_options?.map((option, index) => {
-                const isSelected = answers[currentQuestion.id]?.includes(option.id) || false;
-                const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
                 
-                return (
-                  <motion.button
-                    key={option.id}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => handleAnswerSelect(option.id)}
-                    className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
-                      isSelected
-                        ? 'border-primary-orange bg-primary-orange/10'
-                        : 'border-primary-gray/30 hover:border-primary-orange/50 bg-primary-gray/5'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        isSelected
-                          ? 'border-primary-orange bg-primary-orange text-white'
-                          : 'border-primary-gray text-primary-gray'
-                      }`}>
-                        {currentQuestion.question_type === 'multiple_answer' ? (
-                          isSelected ? <CheckCircle size={16} /> : <div className="w-4 h-4 border border-current rounded" />
-                        ) : (
-                          <span className="text-sm font-bold">{optionLetter}</span>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-robotic-green">
+                      {Object.keys(answers).length}
+                    </div>
+                    <div className="text-sm text-primary-gray">Answered</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-yellow-500">
+                      {totalQuestions - Object.keys(answers).length}
+                    </div>
+                    <div className="text-sm text-primary-gray">Unanswered</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-primary-orange">
+                      {Math.round(getProgressPercentage())}%
+                    </div>
+                    <div className="text-sm text-primary-gray">Complete</div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Questions Review List */}
+              <div className="space-y-4">
+                {sessionQuestions.map((question, index) => {
+                  const questionAnswers = answers[question.id] || [];
+                  const hasAnswer = questionAnswers.length > 0;
+                  
+                  return (
+                    <Card key={question.id} className={`${hasAnswer ? 'border-robotic-green/30' : 'border-yellow-500/30'}`}>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                            hasAnswer ? 'bg-robotic-green text-white' : 'bg-yellow-500 text-black'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-primary-white">
+                              Question {index + 1}
+                            </h3>
+                            <p className="text-sm text-primary-gray">
+                              {hasAnswer ? 'Answered' : 'Not answered'} • {question.points || 1} point{(question.points || 1) !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditQuestion(question.id)}
+                        >
+                          <Edit size={16} />
+                          Edit
+                        </Button>
+                      </div>
+
+                      <div className="mb-4">
+                        <p className="text-primary-white font-medium mb-3">
+                          {question.question_text}
+                        </p>
+                        
+                        {question.question_image_url && (
+                          <img
+                            src={question.question_image_url}
+                            alt="Question illustration"
+                            className="max-w-full h-auto rounded-lg border border-primary-gray/30 mb-3"
+                            style={{ maxHeight: '200px' }}
+                          />
                         )}
                       </div>
+
+                      <div className="space-y-2">
+                        {question.answer_options?.map((option, optionIndex) => {
+                          const isSelected = questionAnswers.includes(option.id);
+                          const optionLetter = String.fromCharCode(65 + optionIndex);
+                          
+                          return (
+                            <div
+                              key={option.id}
+                              className={`p-3 rounded-lg border ${
+                                isSelected
+                                  ? 'border-primary-orange bg-primary-orange/10'
+                                  : 'border-primary-gray/30'
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-bold ${
+                                  isSelected
+                                    ? 'border-primary-orange bg-primary-orange text-white'
+                                    : 'border-primary-gray text-primary-gray'
+                                }`}>
+                                  {question.question_type === 'multiple_answer' ? (
+                                    isSelected ? '✓' : ''
+                                  ) : (
+                                    optionLetter
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <span className={`${isSelected ? 'text-primary-white font-medium' : 'text-primary-gray'}`}>
+                                    {option.option_text}
+                                  </span>
+                                  {option.option_image_url && (
+                                    <img
+                                      src={option.option_image_url}
+                                      alt="Option illustration"
+                                      className="mt-2 max-w-full h-auto rounded-lg border border-primary-gray/30"
+                                      style={{ maxHeight: '150px' }}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {!hasAnswer && (
+                        <div className="mt-4 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                          <p className="text-yellow-400 text-sm font-medium">
+                            ⚠️ This question has not been answered yet
+                          </p>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Final Submit Button */}
+              <Card className="bg-red-500/10 border-red-500/30 text-center">
+                <h3 className="text-xl font-bold text-primary-white mb-2">
+                  Ready to Submit?
+                </h3>
+                <p className="text-primary-gray mb-6">
+                  Once you submit, you cannot make any changes to your answers.
+                  Make sure you have reviewed all questions.
+                </p>
+                <Button 
+                  variant="danger" 
+                  size="lg"
+                  onClick={handleCompleteExam}
+                  disabled={examCompleted}
+                >
+                  <Flag size={20} />
+                  Submit Final Exam
+                </Button>
+              </Card>
+            </div>
+          ) : (
+            /* Exam Mode */
+            <Card className="max-w-4xl mx-auto">
+              <motion.div
+                key={currentQuestion.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Question Header */}
+                <div className="mb-8">
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      editingQuestion === currentQuestion.id ? 'bg-primary-orange/20 border-2 border-primary-orange' : 'bg-primary-orange/20'
+                    }`}>
+                      <span className="text-primary-orange font-bold text-lg">
+                        {currentQuestionIndex + 1}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h2 className="text-xl font-bold text-primary-white mb-2">
+                        {currentQuestion.question_text}
+                      </h2>
                       
-                      <div className="flex-1">
-                        <span className={`${isSelected ? 'text-primary-white' : 'text-primary-gray'}`}>
-                          {option.option_text}
+                      {/* Question Image */}
+                      {currentQuestion.question_image_url && (
+                        <div className="mb-4">
+                          <img
+                            src={currentQuestion.question_image_url}
+                            alt="Question illustration"
+                            className="max-w-full h-auto rounded-lg border border-primary-gray/30"
+                            style={{ maxHeight: '300px' }}
+                          />
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-4 text-sm text-primary-gray">
+                        <span>Difficulty: Level {currentQuestion.difficulty}</span>
+                        <span>•</span>
+                        <span>Points: {currentQuestion.points || 1}</span>
+                        <span>•</span>
+                        <span className="capitalize">
+                          {currentQuestion.question_type.replace('_', ' ')}
                         </span>
-                        
-                        {/* Option Image */}
-                        {option.option_image_url && (
-                          <div className="mt-3">
-                            <img
-                              src={option.option_image_url}
-                              alt="Option illustration"
-                              className="max-w-full h-auto rounded-lg border border-primary-gray/30"
-                              style={{ maxHeight: '200px' }}
-                            />
-                          </div>
+                        {currentQuestion.question_type === 'multiple_answer' && (
+                          <>
+                            <span>•</span>
+                            <span className="text-primary-orange">Select all that apply</span>
+                          </>
                         )}
                       </div>
                     </div>
-                  </motion.button>
+                  </div>
+                </div>
+
+                {/* Answer Options */}
+                <div className="space-y-3 mb-8">
+                  {currentQuestion.answer_options?.map((option, index) => {
+                    const isSelected = answers[currentQuestion.id]?.includes(option.id) || false;
+                    const optionLetter = String.fromCharCode(65 + index);
+                    
+                    return (
+                      <motion.button
+                        key={option.id}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => handleAnswerSelect(option.id)}
+                        className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+                          isSelected
+                            ? 'border-primary-orange bg-primary-orange/10'
+                            : 'border-primary-gray/30 hover:border-primary-orange/50 bg-primary-gray/5'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                            isSelected
+                              ? 'border-primary-orange bg-primary-orange text-white'
+                              : 'border-primary-gray text-primary-gray'
+                          }`}>
+                            {currentQuestion.question_type === 'multiple_answer' ? (
+                              isSelected ? <CheckCircle size={16} /> : <div className="w-4 h-4 border border-current rounded" />
+                            ) : (
+                              <span className="text-sm font-bold">{optionLetter}</span>
+                            )}
+                          </div>
+                          
+                          <div className="flex-1">
+                            <span className={`${isSelected ? 'text-primary-white' : 'text-primary-gray'}`}>
+                              {option.option_text}
+                            </span>
+                            
+                            {/* Option Image */}
+                            {option.option_image_url && (
+                              <div className="mt-3">
+                                <img
+                                  src={option.option_image_url}
+                                  alt="Option illustration"
+                                  className="max-w-full h-auto rounded-lg border border-primary-gray/30"
+                                  style={{ maxHeight: '200px' }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+
+                {/* Navigation */}
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    onClick={handlePreviousQuestion}
+                    disabled={currentQuestionIndex === 0}
+                  >
+                    <ChevronLeft size={16} />
+                    Previous
+                  </Button>
+                  
+                  <div className="text-center">
+                    <p className="text-primary-gray text-sm">
+                      Use arrow keys or click question numbers to navigate
+                    </p>
+                  </div>
+                  
+                  <Button
+                    variant="ghost"
+                    onClick={handleNextQuestion}
+                    disabled={currentQuestionIndex === totalQuestions - 1}
+                  >
+                    Next
+                    <ChevronRight size={16} />
+                  </Button>
+                </div>
+              </motion.div>
+            </Card>
+          )}
+        </div>
+
+        {/* Navigation Panel (Right Panel - 20%) */}
+        <div className="w-80 bg-primary-black border-l border-primary-gray/30 p-4 overflow-y-auto">
+          <div className="space-y-4">
+            {/* Current Question Indicator */}
+            <div className="text-center">
+              <h3 className="text-lg font-bold text-primary-white mb-2">
+                {showReview ? 'All Questions' : 'Question Navigation'}
+              </h3>
+              {!showReview && (
+                <p className="text-primary-gray text-sm">
+                  Question {currentQuestionIndex + 1} of {totalQuestions}
+                </p>
+              )}
+            </div>
+
+            {/* Question Grid */}
+            <div className="grid grid-cols-5 gap-2">
+              {sessionQuestions.map((question, index) => {
+                const status = getQuestionStatus(question.id, index);
+                const isActive = index === currentQuestionIndex && !showReview;
+                
+                return (
+                  <button
+                    key={question.id}
+                    onClick={() => handleQuestionNavigation(index)}
+                    className={`
+                      w-12 h-12 rounded-lg text-sm font-bold transition-all duration-200
+                      ${getStatusColor(status)}
+                      ${isActive ? 'ring-2 ring-primary-orange scale-110' : 'hover:scale-105'}
+                    `}
+                    title={`Question ${index + 1} - ${status}`}
+                  >
+                    {index + 1}
+                  </button>
                 );
               })}
             </div>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                onClick={handlePreviousQuestion}
-                disabled={currentQuestionIndex === 0}
-              >
-                <ChevronLeft size={16} />
-                Previous
-              </Button>
-              
+            {/* Legend */}
+            <div className="space-y-2 text-sm">
+              <h4 className="font-semibold text-primary-white">Legend:</h4>
               <div className="flex items-center gap-2">
-                {sessionQuestions.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => dispatch(setCurrentQuestion(index))}
-                    className={`w-8 h-8 rounded-full text-sm font-bold transition-colors ${
-                      index === currentQuestionIndex
-                        ? 'bg-primary-orange text-white'
-                        : answers[sessionQuestions[index]?.id]
-                        ? 'bg-robotic-green text-white'
-                        : 'bg-primary-gray/30 text-primary-gray hover:bg-primary-gray/50'
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                ))}
+                <div className="w-4 h-4 bg-robotic-green rounded"></div>
+                <span className="text-primary-gray">Answered</span>
               </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                <span className="text-primary-gray">Viewed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-primary-gray rounded"></div>
+                <span className="text-primary-gray">Not visited</span>
+              </div>
+            </div>
+
+            {/* Progress Summary */}
+            <Card className="bg-primary-gray/10">
+              <h4 className="font-semibold text-primary-white mb-3">Progress Summary</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-primary-gray">Answered:</span>
+                  <span className="text-robotic-green font-medium">
+                    {Object.keys(answers).length}/{totalQuestions}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-primary-gray">Remaining:</span>
+                  <span className="text-yellow-500 font-medium">
+                    {totalQuestions - Object.keys(answers).length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-primary-gray">Progress:</span>
+                  <span className="text-primary-orange font-medium">
+                    {Math.round(getProgressPercentage())}%
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Quick Actions */}
+            <div className="space-y-2">
+              {!showReview && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleReviewAnswers}
+                  className="w-full"
+                >
+                  <FileText size={16} />
+                  Review All Answers
+                </Button>
+              )}
               
               <Button
-                variant="ghost"
-                onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === totalQuestions - 1}
+                variant="danger"
+                size="sm"
+                onClick={handleCompleteExam}
+                disabled={examCompleted}
+                className="w-full"
               >
-                Next
-                <ChevronRight size={16} />
+                <Flag size={16} />
+                Submit Exam
               </Button>
             </div>
-          </motion.div>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
