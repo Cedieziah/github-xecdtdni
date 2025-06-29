@@ -14,8 +14,7 @@ import {
   LogOut,
   Shield,
   TrendingUp,
-  Menu,
-  GraduationCap
+  Menu
 } from 'lucide-react';
 import { RootState } from '../../store';
 import { toggleSidebar } from '../../store/slices/uiSlice';
@@ -42,7 +41,6 @@ const Sidebar: React.FC = () => {
   const candidateNavItems = [
     { path: '/app/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { path: '/app/certifications', icon: BookOpen, label: 'Certifications' },
-    { path: '/app/courses', icon: GraduationCap, label: 'Course Catalog' },
     { path: '/app/certificates', icon: Award, label: 'My Certificates' },
     { path: '/app/profile', icon: Users, label: 'Profile' },
   ];
