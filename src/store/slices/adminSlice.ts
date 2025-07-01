@@ -245,23 +245,56 @@ export const deleteQuestion = createAsyncThunk(
   }
 );
 
-// Users
+// Enhanced Users fetch with comprehensive error handling and logging
 export const fetchUsers = createAsyncThunk(
   'admin/fetchUsers',
   async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+    console.log('🔍 Fetching users from profiles table...');
     
-    if (error) throw error;
-    return data;
+    try {
+      const { data, error, count } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ Error fetching users:', error);
+        throw new Error(`Failed to fetch users: ${error.message}`);
+      }
+
+      console.log('✅ Successfully fetched users:', {
+        count: data?.length || 0,
+        totalCount: count,
+        sampleUser: data?.[0] ? {
+          id: data[0].id,
+          email: data[0].email,
+          role: data[0].role,
+          hasName: !!data[0].full_name
+        } : null
+      });
+
+      // Validate user data integrity
+      const usersWithIssues = data?.filter(user => 
+        !user.email || !user.username || !user.role
+      ) || [];
+
+      if (usersWithIssues.length > 0) {
+        console.warn('⚠️ Found users with missing data:', usersWithIssues.length);
+      }
+
+      return data || [];
+    } catch (error: any) {
+      console.error('💥 Failed to fetch users:', error);
+      throw error;
+    }
   }
 );
 
 export const updateUserRole = createAsyncThunk(
   'admin/updateUserRole',
   async ({ userId, role }: { userId: string; role: 'user' | 'admin' }) => {
+    console.log('🔄 Updating user role:', { userId, role });
+    
     const { data, error } = await supabase
       .from('profiles')
       .update({ 
@@ -272,7 +305,12 @@ export const updateUserRole = createAsyncThunk(
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error updating user role:', error);
+      throw error;
+    }
+
+    console.log('✅ User role updated successfully');
     return data;
   }
 );
@@ -280,12 +318,19 @@ export const updateUserRole = createAsyncThunk(
 export const deleteUser = createAsyncThunk(
   'admin/deleteUser',
   async (userId: string) => {
+    console.log('🗑️ Deleting user:', userId);
+    
     const { error } = await supabase
       .from('profiles')
       .delete()
       .eq('id', userId);
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error deleting user:', error);
+      throw error;
+    }
+
+    console.log('✅ User deleted successfully');
     return userId;
   }
 );
@@ -401,9 +446,20 @@ const adminSlice = createSlice({
         state.questions = state.questions.filter(q => q.id !== action.payload);
       })
       
-      // Users
+      // Users - Enhanced with better error handling
+      .addCase(fetchUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(fetchUsers.fulfilled, (state, action) => {
+        state.loading = false;
         state.users = action.payload;
+        console.log('📊 Users loaded into Redux state:', action.payload.length);
+      })
+      .addCase(fetchUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to fetch users';
+        console.error('❌ Users fetch failed in Redux:', action.error.message);
       })
       .addCase(updateUserRole.fulfilled, (state, action) => {
         const index = state.users.findIndex(u => u.id === action.payload.id);

@@ -51,6 +51,22 @@ const Sidebar: React.FC = () => {
     dispatch(logoutUser());
   };
 
+  // Get platform name from settings or use default
+  const getPlatformName = () => {
+    try {
+      const savedSettings = localStorage.getItem('platformSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        return settings.platformName || 'EIRA';
+      }
+    } catch (error) {
+      console.error('Error loading platform name from settings:', error);
+    }
+    return 'EIRA'; // Default to EIRA
+  };
+
+  const platformName = getPlatformName();
+
   return (
     <motion.aside
       initial={false}
@@ -84,7 +100,7 @@ const Sidebar: React.FC = () => {
                   <Shield size={20} className="text-white" />
                 </div>
                 <span className="text-xl font-bold text-primary-white">
-                  CertifyPro
+                  {platformName}
                 </span>
               </motion.div>
             )}
