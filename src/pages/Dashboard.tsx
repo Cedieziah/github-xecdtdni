@@ -241,7 +241,6 @@ const Dashboard: React.FC = () => {
                 <h2 className="text-xl font-bold text-primary-white">
                   {isAdmin ? 'Recent Activity' : 'Available Certifications'}
                 </h2>
-                {/* Removed "View All" button to prevent unauthorized access */}
               </div>
               <div className="space-y-4">
                 {certifications.slice(0, 4).map((cert, index) => (

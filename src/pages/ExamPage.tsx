@@ -544,7 +544,7 @@ const ExamPage: React.FC = () => {
                                   )}
                                 </div>
                                 <div className="flex-1">
-                                  <span className={`${isSelected ? 'text-primary-white font-medium' : 'text-primary-gray'}`}>
+                                  <span className={`${isSelected ? 'text-primary-white font-medium' : 'text-primary-white'}`}>
                                     {option.option_text}
                                   </span>
                                   {option.option_image_url && (
@@ -681,7 +681,7 @@ const ExamPage: React.FC = () => {
                           </div>
                           
                           <div className="flex-1">
-                            <span className={`${isSelected ? 'text-primary-white' : 'text-primary-gray'}`}>
+                            <span className={`${isSelected ? 'text-primary-white font-medium' : 'text-primary-white'}`}>
                               {option.option_text}
                             </span>
                             

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Settings, 
@@ -10,12 +10,15 @@ import {
   Palette,
   Globe,
   Lock,
-  Users
+  Users,
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import toast from 'react-hot-toast';
 
 const AdminSettings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -50,18 +53,100 @@ const AdminSettings: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<'platform' | 'security' | 'email' | 'exam' | 'certificate'>('platform');
+  const [saving, setSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Load settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('platformSettings');
+    if (savedSettings) {
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings(prev => ({ ...prev, ...parsed }));
+        const savedDate = localStorage.getItem('platformSettingsLastSaved');
+        if (savedDate) {
+          setLastSaved(new Date(savedDate));
+        }
+      } catch (error) {
+        console.error('Error loading saved settings:', error);
+      }
+    }
+  }, []);
 
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
     }));
+    setHasUnsavedChanges(true);
   };
 
-  const handleSaveSettings = () => {
-    // Here you would save settings to your backend
-    console.log('Saving settings:', settings);
-    // Show success message
+  const validateSettings = () => {
+    const errors: string[] = [];
+
+    // Platform validation
+    if (!settings.platformName.trim()) {
+      errors.push('Platform name is required');
+    }
+    if (!settings.supportEmail.trim()) {
+      errors.push('Support email is required');
+    }
+    if (settings.maxExamDuration < 1) {
+      errors.push('Max exam duration must be at least 1 minute');
+    }
+    if (settings.defaultPassingScore < 1 || settings.defaultPassingScore > 100) {
+      errors.push('Default passing score must be between 1 and 100');
+    }
+
+    // Security validation
+    if (settings.sessionTimeout < 5) {
+      errors.push('Session timeout must be at least 5 minutes');
+    }
+    if (settings.maxLoginAttempts < 1) {
+      errors.push('Max login attempts must be at least 1');
+    }
+    if (settings.passwordMinLength < 6) {
+      errors.push('Password minimum length must be at least 6 characters');
+    }
+
+    // Certificate validation
+    if (settings.certificateValidityPeriod < 1) {
+      errors.push('Certificate validity period must be at least 1 day');
+    }
+
+    return errors;
+  };
+
+  const handleSaveSettings = async () => {
+    const validationErrors = validateSettings();
+    
+    if (validationErrors.length > 0) {
+      toast.error(`Validation failed: ${validationErrors.join(', ')}`);
+      return;
+    }
+
+    setSaving(true);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Save to localStorage (simulating database save)
+      localStorage.setItem('platformSettings', JSON.stringify(settings));
+      const now = new Date();
+      localStorage.setItem('platformSettingsLastSaved', now.toISOString());
+      
+      setLastSaved(now);
+      setHasUnsavedChanges(false);
+      
+      toast.success('Settings saved successfully!');
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const settingsTabs = [
@@ -84,11 +169,30 @@ const AdminSettings: React.FC = () => {
             <p className="text-primary-gray">
               Configure platform behavior and preferences
             </p>
+            {lastSaved && (
+              <p className="text-sm text-robotic-green mt-1">
+                <CheckCircle size={14} className="inline mr-1" />
+                Last saved: {lastSaved.toLocaleString()}
+              </p>
+            )}
           </div>
-          <Button variant="primary" onClick={handleSaveSettings}>
-            <Save size={16} />
-            Save All Settings
-          </Button>
+          <div className="flex items-center gap-4">
+            {hasUnsavedChanges && (
+              <div className="flex items-center gap-2 text-yellow-500">
+                <AlertTriangle size={16} />
+                <span className="text-sm">Unsaved changes</span>
+              </div>
+            )}
+            <Button 
+              variant="primary" 
+              onClick={handleSaveSettings}
+              loading={saving}
+              disabled={!hasUnsavedChanges}
+            >
+              <Save size={16} />
+              {saving ? 'Saving...' : 'Save All Settings'}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -129,15 +233,19 @@ const AdminSettings: React.FC = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
-                      label="Platform Name"
+                      label="Platform Name *"
                       value={settings.platformName}
                       onChange={(e) => handleSettingChange('platformName', e.target.value)}
+                      placeholder="Enter platform name"
+                      required
                     />
                     <Input
-                      label="Support Email"
+                      label="Support Email *"
                       type="email"
                       value={settings.supportEmail}
                       onChange={(e) => handleSettingChange('supportEmail', e.target.value)}
+                      placeholder="support@example.com"
+                      required
                     />
                   </div>
 
@@ -149,25 +257,36 @@ const AdminSettings: React.FC = () => {
                       value={settings.platformDescription}
                       onChange={(e) => handleSettingChange('platformDescription', e.target.value)}
                       rows={3}
-                      className="w-full px-3 py-2 bg-primary-black border border-primary-gray rounded-lg text-primary-white"
+                      className="w-full px-3 py-2 bg-primary-black border border-primary-gray rounded-lg text-primary-white placeholder-primary-gray/50 focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                      placeholder="Describe your platform..."
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
-                      label="Max Exam Duration (minutes)"
+                      label="Max Exam Duration (minutes) *"
                       type="number"
+                      min="1"
                       value={settings.maxExamDuration}
-                      onChange={(e) => handleSettingChange('maxExamDuration', parseInt(e.target.value))}
+                      onChange={(e) => handleSettingChange('maxExamDuration', parseInt(e.target.value) || 1)}
+                      required
                     />
                     <Input
-                      label="Default Passing Score (%)"
+                      label="Default Passing Score (%) *"
                       type="number"
                       min="1"
                       max="100"
                       value={settings.defaultPassingScore}
-                      onChange={(e) => handleSettingChange('defaultPassingScore', parseInt(e.target.value))}
+                      onChange={(e) => handleSettingChange('defaultPassingScore', parseInt(e.target.value) || 70)}
+                      required
                     />
+                  </div>
+
+                  <div className="p-4 bg-robotic-blue/10 border border-robotic-blue/30 rounded-lg">
+                    <h4 className="text-robotic-blue font-medium mb-2">Platform Name Preview</h4>
+                    <p className="text-primary-white">
+                      Your platform will be displayed as: <strong>{settings.platformName}</strong>
+                    </p>
                   </div>
                 </motion.div>
               )}
@@ -190,29 +309,35 @@ const AdminSettings: React.FC = () => {
                         type="checkbox"
                         checked={settings.enableTwoFactor}
                         onChange={(e) => handleSettingChange('enableTwoFactor', e.target.checked)}
-                        className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded"
+                        className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded focus:ring-primary-orange"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <Input
-                      label="Session Timeout (minutes)"
+                      label="Session Timeout (minutes) *"
                       type="number"
+                      min="5"
                       value={settings.sessionTimeout}
-                      onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value))}
+                      onChange={(e) => handleSettingChange('sessionTimeout', parseInt(e.target.value) || 30)}
+                      required
                     />
                     <Input
-                      label="Max Login Attempts"
+                      label="Max Login Attempts *"
                       type="number"
+                      min="1"
                       value={settings.maxLoginAttempts}
-                      onChange={(e) => handleSettingChange('maxLoginAttempts', parseInt(e.target.value))}
+                      onChange={(e) => handleSettingChange('maxLoginAttempts', parseInt(e.target.value) || 5)}
+                      required
                     />
                     <Input
-                      label="Min Password Length"
+                      label="Min Password Length *"
                       type="number"
+                      min="6"
                       value={settings.passwordMinLength}
-                      onChange={(e) => handleSettingChange('passwordMinLength', parseInt(e.target.value))}
+                      onChange={(e) => handleSettingChange('passwordMinLength', parseInt(e.target.value) || 8)}
+                      required
                     />
                   </div>
                 </motion.div>
@@ -241,7 +366,7 @@ const AdminSettings: React.FC = () => {
                           type="checkbox"
                           checked={settings[setting.key as keyof typeof settings] as boolean}
                           onChange={(e) => handleSettingChange(setting.key, e.target.checked)}
-                          className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded"
+                          className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded focus:ring-primary-orange"
                         />
                       </div>
                     ))}
@@ -273,7 +398,7 @@ const AdminSettings: React.FC = () => {
                           type="checkbox"
                           checked={settings[setting.key as keyof typeof settings] as boolean}
                           onChange={(e) => handleSettingChange(setting.key, e.target.checked)}
-                          className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded"
+                          className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded focus:ring-primary-orange"
                         />
                       </div>
                     ))}
@@ -291,10 +416,12 @@ const AdminSettings: React.FC = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
-                      label="Certificate Validity (days)"
+                      label="Certificate Validity (days) *"
                       type="number"
+                      min="1"
                       value={settings.certificateValidityPeriod}
-                      onChange={(e) => handleSettingChange('certificateValidityPeriod', parseInt(e.target.value))}
+                      onChange={(e) => handleSettingChange('certificateValidityPeriod', parseInt(e.target.value) || 365)}
+                      required
                     />
                   </div>
 
@@ -312,7 +439,7 @@ const AdminSettings: React.FC = () => {
                           type="checkbox"
                           checked={settings[setting.key as keyof typeof settings] as boolean}
                           onChange={(e) => handleSettingChange(setting.key, e.target.checked)}
-                          className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded"
+                          className="w-4 h-4 text-primary-orange bg-primary-black border-primary-gray rounded focus:ring-primary-orange"
                         />
                       </div>
                     ))}

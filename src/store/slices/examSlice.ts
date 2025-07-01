@@ -56,6 +56,8 @@ export const fetchCertifications = createAsyncThunk(
 export const fetchCertificationById = createAsyncThunk(
   'exam/fetchCertificationById',
   async (certificationId: string) => {
+    console.log('🔍 Fetching certification by ID:', certificationId);
+    
     const { data, error } = await supabase
       .from('certifications')
       .select(`
@@ -68,7 +70,12 @@ export const fetchCertificationById = createAsyncThunk(
       .eq('id', certificationId)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error fetching certification:', error);
+      throw error;
+    }
+    
+    console.log('✅ Fetched certification:', data?.name);
     return data;
   }
 );
@@ -303,6 +310,8 @@ export const submitAnswer = createAsyncThunk(
     questionId: string; 
     selectedOptions: string[] 
   }) => {
+    console.log('📝 Submitting answer for question:', questionId, 'options:', selectedOptions);
+    
     const { data, error } = await supabase
       .from('exam_answers')
       .upsert({
@@ -313,7 +322,12 @@ export const submitAnswer = createAsyncThunk(
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Answer submission error:', error);
+      throw error;
+    }
+    
+    console.log('✅ Answer submitted successfully');
     return { questionId, selectedOptions, data };
   }
 );
@@ -507,6 +521,7 @@ const examSlice = createSlice({
       state.timeRemaining = action.payload;
     },
     resetExamState: (state) => {
+      console.log('🔄 Resetting exam state');
       state.currentCertification = null;
       state.currentSession = null;
       state.sessionQuestions = [];
@@ -543,6 +558,7 @@ const examSlice = createSlice({
         state.error = null;
       })
       .addCase(startExamSession.fulfilled, (state, action) => {
+        console.log('✅ Exam session started successfully in Redux');
         state.loading = false;
         state.currentSession = action.payload.session;
         state.sessionQuestions = action.payload.questions;
@@ -553,10 +569,12 @@ const examSlice = createSlice({
         state.answers = {};
       })
       .addCase(startExamSession.rejected, (state, action) => {
+        console.error('❌ Exam session start failed in Redux:', action.error.message);
         state.loading = false;
         state.error = action.error.message || 'Failed to start exam session';
       })
       .addCase(fetchExamSession.fulfilled, (state, action) => {
+        console.log('✅ Exam session fetched successfully in Redux');
         state.currentSession = action.payload.session;
         state.sessionQuestions = action.payload.questions;
         state.currentCertification = action.payload.certification;

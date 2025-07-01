@@ -12,7 +12,8 @@ import {
   Play,
   Shield,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Lock
 } from 'lucide-react';
 import { RootState } from '../store';
 import { fetchCertifications } from '../store/slices/examSlice';
@@ -20,6 +21,7 @@ import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import AccessCodeModal from '../components/ui/AccessCodeModal';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -27,9 +29,17 @@ const CertificationsPage: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { certifications, loading } = useSelector((state: RootState) => state.exam);
+  const { user } = useSelector((state: RootState) => state.auth);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<string>('all');
   const [certificationStats, setCertificationStats] = useState<Record<string, any>>({});
+  const [accessCodeModal, setAccessCodeModal] = useState<{
+    isOpen: boolean;
+    certification: any | null;
+  }>({
+    isOpen: false,
+    certification: null
+  });
 
   useEffect(() => {
     dispatch(fetchCertifications());
@@ -107,11 +117,31 @@ const CertificationsPage: React.FC = () => {
     return matchesSearch && matchesProvider;
   });
 
+  const validateAccessCode = async (certification: any, accessCode: string): Promise<boolean> => {
+    console.log('🔐 Validating access code for certification:', certification.name);
+    console.log('📝 Provided code:', accessCode);
+    console.log('🎯 Expected code:', certification.access_code);
+    
+    // Simulate network delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    if (accessCode === certification.access_code) {
+      console.log('✅ Access code validation successful');
+      return true;
+    } else {
+      console.log('❌ Access code validation failed');
+      return false;
+    }
+  };
+
   const handleStartExam = async (certification: any) => {
+    console.log('🚀 Starting exam process for:', certification.name);
+    
     const stats = certificationStats[certification.id];
     
     // Check if certification has valid questions
     if (!stats || !stats.canTakeExam) {
+      console.error('❌ Certification not ready for exams:', stats?.issues);
       toast.error(
         `This certification is not ready for exams. Issues: ${stats?.issues.join(', ') || 'Unknown error'}`
       );
@@ -120,23 +150,67 @@ const CertificationsPage: React.FC = () => {
 
     // Check if certification requires access code
     if (certification.access_code) {
-      const accessCode = prompt('This certification requires an access code:');
-      if (accessCode !== certification.access_code) {
-        toast.error('Invalid access code. Please contact your administrator.');
-        return;
-      }
+      console.log('🔒 Certification requires access code, showing modal');
+      setAccessCodeModal({
+        isOpen: true,
+        certification
+      });
+      return;
     }
+
+    // No access code required, proceed directly
+    await proceedToExam(certification);
+  };
+
+  const proceedToExam = async (certification: any) => {
+    console.log('🎯 Proceeding to exam for certification:', certification.id);
     
     // Show loading toast
     const loadingToast = toast.loading('Starting exam...');
     
     try {
-      navigate(`/app/exam/${certification.id}`);
-    } catch (error) {
-      toast.error('Failed to start exam. Please try again.');
-    } finally {
-      toast.dismiss(loadingToast);
+      // Navigate to exam page with proper URL structure
+      const examUrl = `/app/exam/${certification.id}`;
+      console.log('🔗 Navigating to exam URL:', examUrl);
+      
+      navigate(examUrl);
+      
+      // Success toast
+      toast.success('Exam started successfully!', { id: loadingToast });
+    } catch (error: any) {
+      console.error('💥 Failed to start exam:', error);
+      toast.error('Failed to start exam. Please try again.', { id: loadingToast });
     }
+  };
+
+  const handleAccessCodeSubmit = async (accessCode: string): Promise<boolean> => {
+    if (!accessCodeModal.certification) {
+      console.error('❌ No certification selected for access code validation');
+      return false;
+    }
+
+    try {
+      const isValid = await validateAccessCode(accessCodeModal.certification, accessCode);
+      
+      if (isValid) {
+        console.log('✅ Access code validated, proceeding to exam');
+        // Close modal and proceed to exam
+        setAccessCodeModal({ isOpen: false, certification: null });
+        await proceedToExam(accessCodeModal.certification);
+        return true;
+      } else {
+        console.log('❌ Invalid access code provided');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('💥 Access code validation error:', error);
+      throw new Error('Failed to validate access code. Please try again.');
+    }
+  };
+
+  const handleCloseAccessCodeModal = () => {
+    console.log('🚪 Closing access code modal');
+    setAccessCodeModal({ isOpen: false, certification: null });
   };
 
   const getDifficultyColor = (questions: number) => {
@@ -221,6 +295,7 @@ const CertificationsPage: React.FC = () => {
           {filteredCertifications.map((certification, index) => {
             const stats = certificationStats[certification.id];
             const canTakeExam = stats?.canTakeExam || false;
+            const requiresAccessCode = Boolean(certification.access_code);
             
             return (
               <motion.div
@@ -247,6 +322,9 @@ const CertificationsPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {requiresAccessCode && (
+                        <Lock size={16} className="text-yellow-500" title="Requires Access Code" />
+                      )}
                       {canTakeExam ? (
                         <CheckCircle size={16} className="text-robotic-green" />
                       ) : (
@@ -311,8 +389,8 @@ const CertificationsPage: React.FC = () => {
                   >
                     {canTakeExam ? (
                       <>
-                        <Play size={16} />
-                        Start Exam
+                        {requiresAccessCode ? <Lock size={16} /> : <Play size={16} />}
+                        {requiresAccessCode ? 'Enter Access Code' : 'Start Exam'}
                       </>
                     ) : (
                       <>
@@ -325,6 +403,12 @@ const CertificationsPage: React.FC = () => {
                   {!canTakeExam && (
                     <p className="text-red-400 text-xs text-center mt-2">
                       Contact administrator to add questions
+                    </p>
+                  )}
+
+                  {requiresAccessCode && canTakeExam && (
+                    <p className="text-yellow-500 text-xs text-center mt-2">
+                      🔒 Protected certification - access code required
                     </p>
                   )}
                 </Card>
@@ -347,6 +431,15 @@ const CertificationsPage: React.FC = () => {
             </p>
           </Card>
         )}
+
+        {/* Access Code Modal */}
+        <AccessCodeModal
+          isOpen={accessCodeModal.isOpen}
+          onClose={handleCloseAccessCodeModal}
+          onSubmit={handleAccessCodeSubmit}
+          certificationName={accessCodeModal.certification?.name || ''}
+          loading={loading}
+        />
       </div>
     </Layout>
   );
