@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { Certification, Question, User, Certificate } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { CertificationFormData } from '../../components/admin/CertificationDetailsForm';
 
 interface AdminState {
   certifications: Certification[];
@@ -20,7 +21,203 @@ const initialState: AdminState = {
   error: null,
 };
 
-// Certifications
+// Enhanced certification creation with details
+export const createCertificationWithDetails = createAsyncThunk(
+  'admin/createCertificationWithDetails',
+  async (formData: CertificationFormData) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    try {
+      // Create main certification record
+      const { data: certification, error: certError } = await supabase
+        .from('certifications')
+        .insert({
+          name: formData.name,
+          description: formData.description,
+          provider: formData.provider,
+          access_code: formData.access_code || null,
+          duration: formData.duration,
+          passing_score: formData.passing_score,
+          total_questions: formData.total_questions,
+          is_active: formData.is_active,
+          created_by: user?.id
+        })
+        .select()
+        .single();
+      
+      if (certError) throw certError;
+
+      // Create certification details record
+      const { error: detailsError } = await supabase
+        .from('certification_details')
+        .insert({
+          certification_id: certification.id,
+          examination_details: {
+            format: "Comprehensive examination",
+            evaluation_components: formData.examination_evaluation,
+            time_limit_minutes: formData.duration,
+            passing_score_percentage: formData.passing_score
+          },
+          topics: formData.exam_coverage.map(coverage => ({
+            domain: coverage.coverage_field,
+            description: coverage.description,
+            key_concepts: coverage.key_concepts,
+            depth_of_understanding: coverage.depth_of_understanding,
+            evaluation_criteria: coverage.evaluation_criteria
+          })),
+          evaluation_criteria: {
+            assessment_methods: formData.examination_evaluation.map(evaluationItem => ({
+              coverage_item: evaluationItem.coverage_item,
+              scoring_guidelines: evaluationItem.scoring_guidelines,
+              performance_indicators: evaluationItem.performance_indicators,
+              minimum_requirements: evaluationItem.minimum_requirements,
+              passing_threshold: evaluationItem.passing_threshold
+            })),
+            scoring_method: "Comprehensive evaluation based on coverage areas",
+            pass_requirements: {
+              minimum_score: formData.passing_score,
+              completion_criteria: ["Complete all questions within time limit", "Meet minimum requirements for each coverage area"]
+            }
+          },
+          prerequisites: formData.exam_coverage.map(coverage => ({
+            type: "coverage",
+            description: `${coverage.coverage_field}: ${coverage.description}`,
+            required: true,
+            recommended: false
+          })),
+          learning_outcomes: formData.examination_evaluation.map(evaluationItem => 
+            `Demonstrate competency in ${evaluationItem.coverage_item} according to specified criteria`
+          ),
+          metadata: {
+            target_audience: formData.target_audience,
+            exam_coverage: formData.exam_coverage,
+            examination_evaluation: formData.examination_evaluation
+          },
+          created_by: user?.id
+        });
+      
+      if (detailsError) {
+        // If details creation fails, clean up the certification
+        await supabase.from('certifications').delete().eq('id', certification.id);
+        throw detailsError;
+      }
+
+      return certification;
+    } catch (error: any) {
+      console.error('Error creating certification with details:', error);
+      throw new Error(`Failed to create certification: ${error.message}`);
+    }
+  }
+);
+
+// Enhanced certification update with details
+export const updateCertificationWithDetails = createAsyncThunk(
+  'admin/updateCertificationWithDetails',
+  async ({ id, formData }: { id: string; formData: CertificationFormData }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    try {
+      // Update main certification record
+      const { data: certification, error: certError } = await supabase
+        .from('certifications')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          provider: formData.provider,
+          access_code: formData.access_code || null,
+          duration: formData.duration,
+          passing_score: formData.passing_score,
+          total_questions: formData.total_questions,
+          is_active: formData.is_active,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (certError) throw certError;
+
+      // Update or create certification details record
+      const { error: detailsError } = await supabase
+        .from('certification_details')
+        .upsert({
+          certification_id: id,
+          examination_details: {
+            format: "Comprehensive examination",
+            evaluation_components: formData.examination_evaluation,
+            time_limit_minutes: formData.duration,
+            passing_score_percentage: formData.passing_score
+          },
+          topics: formData.exam_coverage.map(coverage => ({
+            domain: coverage.coverage_field,
+            description: coverage.description,
+            key_concepts: coverage.key_concepts,
+            depth_of_understanding: coverage.depth_of_understanding,
+            evaluation_criteria: coverage.evaluation_criteria
+          })),
+          evaluation_criteria: {
+            assessment_methods: formData.examination_evaluation.map(evaluationItem => ({
+              coverage_item: evaluationItem.coverage_item,
+              scoring_guidelines: evaluationItem.scoring_guidelines,
+              performance_indicators: evaluationItem.performance_indicators,
+              minimum_requirements: evaluationItem.minimum_requirements,
+              passing_threshold: evaluationItem.passing_threshold
+            })),
+            scoring_method: "Comprehensive evaluation based on coverage areas",
+            pass_requirements: {
+              minimum_score: formData.passing_score,
+              completion_criteria: ["Complete all questions within time limit", "Meet minimum requirements for each coverage area"]
+            }
+          },
+          prerequisites: formData.exam_coverage.map(coverage => ({
+            type: "coverage",
+            description: `${coverage.coverage_field}: ${coverage.description}`,
+            required: true,
+            recommended: false
+          })),
+          learning_outcomes: formData.examination_evaluation.map(evaluationItem => 
+            `Demonstrate competency in ${evaluationItem.coverage_item} according to specified criteria`
+          ),
+          metadata: {
+            target_audience: formData.target_audience,
+            exam_coverage: formData.exam_coverage,
+            examination_evaluation: formData.examination_evaluation
+          },
+          updated_by: user?.id,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (detailsError) throw detailsError;
+
+      return certification;
+    } catch (error: any) {
+      console.error('Error updating certification with details:', error);
+      throw new Error(`Failed to update certification: ${error.message}`);
+    }
+  }
+);
+
+// Fetch certification with details
+export const fetchCertificationWithDetails = createAsyncThunk(
+  'admin/fetchCertificationWithDetails',
+  async (certificationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('certifications_with_details')
+        .select('*')
+        .eq('id', certificationId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching certification details:', error);
+      throw new Error(`Failed to fetch certification details: ${error.message}`);
+    }
+  }
+);
+
+// Existing thunks...
 export const fetchCertifications = createAsyncThunk(
   'admin/fetchCertifications',
   async () => {
@@ -401,11 +598,38 @@ const adminSlice = createSlice({
       .addCase(createCertification.fulfilled, (state, action) => {
         state.certifications.unshift(action.payload);
       })
+      .addCase(createCertificationWithDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(createCertificationWithDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        state.certifications.unshift(action.payload);
+      })
+      .addCase(createCertificationWithDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to create certification';
+      })
       .addCase(updateCertification.fulfilled, (state, action) => {
         const index = state.certifications.findIndex(c => c.id === action.payload.id);
         if (index !== -1) {
           state.certifications[index] = action.payload;
         }
+      })
+      .addCase(updateCertificationWithDetails.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCertificationWithDetails.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.certifications.findIndex(c => c.id === action.payload.id);
+        if (index !== -1) {
+          state.certifications[index] = action.payload;
+        }
+      })
+      .addCase(updateCertificationWithDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to update certification';
       })
       .addCase(deleteCertification.fulfilled, (state, action) => {
         state.certifications = state.certifications.filter(c => c.id !== action.payload);

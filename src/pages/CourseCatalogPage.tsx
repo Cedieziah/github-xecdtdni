@@ -17,7 +17,8 @@ import {
   SlidersHorizontal,
   ArrowRight,
   Play,
-  CheckCircle
+  CheckCircle,
+  Loader
 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
@@ -25,190 +26,8 @@ import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { Course, CourseFilters, SearchSuggestion } from '../types';
 import { useNavigate } from 'react-router-dom';
-
-// Mock data - replace with actual API calls
-const mockCourses: Course[] = [
-  {
-    id: '1',
-    title: 'CompTIA Security+',
-    description: 'Comprehensive cybersecurity certification program covering network security, compliance, operational security, and threats.',
-    category: 'Cybersecurity',
-    certification_type: 'CompTIA',
-    duration: 40,
-    skill_level: 'intermediate',
-    price: 35000,
-    currency: 'PHP',
-    start_date: '2025-02-15',
-    instructor: 'Dr. Maria Santos',
-    learning_outcomes: [
-      'Industry-standard security certification',
-      'Hands-on security tools training',
-      'Career advancement opportunities',
-      'Network security fundamentals'
-    ],
-    prerequisites: ['Basic networking knowledge', 'Computer fundamentals'],
-    modules: [],
-    featured: true,
-    image_url: 'https://images.pexels.com/photos/60504/security-protection-anti-virus-software-60504.jpeg',
-    rating: 4.8,
-    total_students: 1250,
-    is_active: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '2',
-    title: 'PCB Design Fundamentals',
-    description: 'Learn professional PCB design using industry-standard software and best practices for electronic circuit board development.',
-    category: 'Electronics',
-    certification_type: 'Professional',
-    duration: 32,
-    skill_level: 'beginner',
-    price: 28000,
-    currency: 'PHP',
-    start_date: '2025-03-01',
-    instructor: 'Eng. Carlos Rodriguez',
-    learning_outcomes: [
-      'Professional PCB design skills',
-      'Industry software proficiency',
-      'Project portfolio development',
-      'Circuit analysis techniques'
-    ],
-    prerequisites: ['Basic electronics knowledge'],
-    modules: [],
-    featured: false,
-    image_url: 'https://images.pexels.com/photos/163100/circuit-circuit-board-resistor-computer-163100.jpeg',
-    rating: 4.6,
-    total_students: 890,
-    is_active: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '3',
-    title: 'Robotics Programming',
-    description: 'Master robot programming and automation systems for Industry 4.0 applications using modern programming languages.',
-    category: 'Robotics',
-    certification_type: 'Professional',
-    duration: 48,
-    skill_level: 'advanced',
-    price: 42000,
-    currency: 'PHP',
-    start_date: '2025-02-22',
-    instructor: 'Dr. Jennifer Lee',
-    learning_outcomes: [
-      'Robot programming expertise',
-      'Automation system design',
-      'Industry 4.0 readiness',
-      'AI integration skills'
-    ],
-    prerequisites: ['Programming experience', 'Basic mathematics'],
-    modules: [],
-    featured: false,
-    image_url: 'https://images.pexels.com/photos/2599244/pexels-photo-2599244.jpeg',
-    rating: 4.9,
-    total_students: 567,
-    is_active: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '4',
-    title: 'Python for Data Science',
-    description: 'Comprehensive Python programming course focused on data analysis, machine learning, and scientific computing.',
-    category: 'Programming',
-    certification_type: 'Python Institute',
-    duration: 36,
-    skill_level: 'intermediate',
-    price: 32000,
-    currency: 'PHP',
-    start_date: '2025-03-15',
-    instructor: 'Prof. Alex Chen',
-    learning_outcomes: [
-      'Python programming mastery',
-      'Data analysis techniques',
-      'Machine learning basics',
-      'Scientific computing skills'
-    ],
-    prerequisites: ['Basic programming knowledge'],
-    modules: [],
-    featured: true,
-    image_url: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg',
-    rating: 4.7,
-    total_students: 2100,
-    is_active: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '5',
-    title: 'Cloud Computing Essentials',
-    description: 'Learn cloud computing fundamentals with hands-on experience in AWS, Azure, and Google Cloud platforms.',
-    category: 'Cloud Computing',
-    certification_type: 'AWS',
-    duration: 44,
-    skill_level: 'intermediate',
-    price: 38000,
-    currency: 'PHP',
-    start_date: '2025-04-01',
-    instructor: 'Eng. Sarah Johnson',
-    learning_outcomes: [
-      'Cloud architecture design',
-      'Multi-platform expertise',
-      'Cost optimization strategies',
-      'Security best practices'
-    ],
-    prerequisites: ['Basic IT knowledge', 'Networking fundamentals'],
-    modules: [],
-    featured: false,
-    image_url: 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg',
-    rating: 4.5,
-    total_students: 1450,
-    is_active: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  },
-  {
-    id: '6',
-    title: 'IoT Development Bootcamp',
-    description: 'Build Internet of Things applications using Arduino, Raspberry Pi, and modern IoT platforms.',
-    category: 'IoT',
-    certification_type: 'Professional',
-    duration: 40,
-    skill_level: 'intermediate',
-    price: 35000,
-    currency: 'PHP',
-    start_date: '2025-03-20',
-    instructor: 'Dr. Michael Brown',
-    learning_outcomes: [
-      'IoT system development',
-      'Sensor integration',
-      'Cloud connectivity',
-      'Mobile app development'
-    ],
-    prerequisites: ['Basic programming', 'Electronics fundamentals'],
-    modules: [],
-    featured: true,
-    image_url: 'https://images.pexels.com/photos/325229/pexels-photo-325229.jpeg',
-    rating: 4.6,
-    total_students: 780,
-    is_active: true,
-    created_at: '2024-01-01',
-    updated_at: '2024-01-01'
-  }
-];
-
-const mockSuggestions: SearchSuggestion[] = [
-  { id: '1', text: 'CompTIA Security+', type: 'course' },
-  { id: '2', text: 'Cybersecurity', type: 'category', count: 5 },
-  { id: '3', text: 'Python Programming', type: 'course' },
-  { id: '4', text: 'Electronics', type: 'category', count: 8 },
-  { id: '5', text: 'Dr. Maria Santos', type: 'instructor' },
-];
-
-const categories = ['All', 'Cybersecurity', 'Electronics', 'Robotics', 'Programming', 'Cloud Computing', 'IoT'];
-const certificationTypes = ['All', 'CompTIA', 'Professional', 'Python Institute', 'AWS'];
-const skillLevels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 const CourseCatalogPage: React.FC = () => {
   const navigate = useNavigate();
@@ -219,11 +38,93 @@ const CourseCatalogPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState<'featured' | 'price' | 'rating' | 'duration'>('featured');
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [certificationTypes, setCertificationTypes] = useState<string[]>(['All']);
   const coursesPerPage = 9;
+
+  // Fetch certifications from Supabase and convert to course format
+  useEffect(() => {
+    const fetchCertifications = async () => {
+      setLoading(true);
+      try {
+        // Fetch certifications
+        const { data: certifications, error } = await supabase
+          .from('certifications')
+          .select(`
+            *,
+            certification_details (*)
+          `)
+          .eq('is_active', true);
+
+        if (error) {
+          throw error;
+        }
+
+        // Extract unique categories and certification types
+        const uniqueProviders = new Set<string>();
+        certifications?.forEach(cert => {
+          if (cert.provider) {
+            uniqueProviders.add(cert.provider);
+          }
+        });
+
+        // Set categories and certification types
+        setCategories(['All', ...Array.from(uniqueProviders)]);
+        setCertificationTypes(['All']);
+
+        // Convert certifications to course format
+        const formattedCourses: Course[] = certifications?.map(cert => {
+          // Get details from certification_details if available
+          const details = cert.certification_details || {};
+          const metadata = details.metadata || {};
+          
+          return {
+            id: cert.id,
+            title: cert.name,
+            description: cert.description,
+            category: cert.provider || 'Uncategorized',
+            certification_type: 'Professional',
+            duration: cert.duration || 60, // Duration in minutes
+            skill_level: metadata.difficulty_level || 'intermediate',
+            price: 35000, // Default price
+            currency: 'PHP',
+            start_date: new Date().toISOString().split('T')[0], // Today's date
+            instructor: 'Expert Instructor',
+            learning_outcomes: details.learning_outcomes || [
+              "Complete certification exam successfully",
+              "Gain industry-recognized credentials",
+              "Demonstrate professional competence"
+            ],
+            prerequisites: details.prerequisites?.map((p: any) => p.description) || ['Basic knowledge in the field'],
+            modules: [],
+            featured: Math.random() > 0.7, // Randomly mark some as featured
+            image_url: `https://images.pexels.com/photos/${Math.floor(Math.random() * 1000000)}/pexels-photo.jpeg`,
+            rating: (4 + Math.random()).toFixed(1),
+            total_students: Math.floor(Math.random() * 2000) + 500,
+            is_active: cert.is_active,
+            created_at: cert.created_at,
+            updated_at: cert.updated_at
+          };
+        }) || [];
+
+        setCourses(formattedCourses);
+      } catch (error: any) {
+        console.error('Error fetching certifications:', error);
+        toast.error('Failed to load courses');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCertifications();
+  }, []);
 
   // Filter and search logic
   const filteredCourses = useMemo(() => {
-    let filtered = mockCourses.filter(course => {
+    let filtered = courses.filter(course => {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -267,11 +168,11 @@ const CourseCatalogPage: React.FC = () => {
         case 'featured':
           if (a.featured && !b.featured) return -1;
           if (!a.featured && b.featured) return 1;
-          return b.rating - a.rating;
+          return parseFloat(b.rating) - parseFloat(a.rating);
         case 'price':
           return a.price - b.price;
         case 'rating':
-          return b.rating - a.rating;
+          return parseFloat(b.rating) - parseFloat(a.rating);
         case 'duration':
           return a.duration - b.duration;
         default:
@@ -280,7 +181,7 @@ const CourseCatalogPage: React.FC = () => {
     });
 
     return filtered;
-  }, [searchTerm, filters, sortBy]);
+  }, [searchTerm, filters, sortBy, courses]);
 
   // Pagination
   const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
@@ -292,13 +193,50 @@ const CourseCatalogPage: React.FC = () => {
   // Search suggestions
   const searchSuggestions = useMemo(() => {
     if (!searchTerm) return [];
-    return mockSuggestions.filter(suggestion =>
-      suggestion.text.toLowerCase().includes(searchTerm.toLowerCase())
-    ).slice(0, 5);
-  }, [searchTerm]);
+    
+    const suggestions: SearchSuggestion[] = [];
+    
+    // Add course title suggestions
+    courses.forEach(course => {
+      if (course.title.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.push({
+          id: `course-${course.id}`,
+          text: course.title,
+          type: 'course'
+        });
+      }
+    });
+    
+    // Add category suggestions
+    categories.filter(cat => cat !== 'All').forEach(category => {
+      if (category.toLowerCase().includes(searchTerm.toLowerCase())) {
+        const count = courses.filter(c => c.category === category).length;
+        suggestions.push({
+          id: `category-${category}`,
+          text: category,
+          type: 'category',
+          count
+        });
+      }
+    });
+    
+    // Add instructor suggestions
+    const instructors = [...new Set(courses.map(c => c.instructor))];
+    instructors.forEach(instructor => {
+      if (instructor.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.push({
+          id: `instructor-${instructor}`,
+          text: instructor,
+          type: 'instructor'
+        });
+      }
+    });
+    
+    return suggestions.slice(0, 5);
+  }, [searchTerm, courses, categories]);
 
   const handleEnrollNow = (courseId: string) => {
-    navigate('/auth');
+    navigate(`/courses/${courseId}`);
   };
 
   const formatPrice = (price: number, currency: string) => {
@@ -325,6 +263,8 @@ const CourseCatalogPage: React.FC = () => {
   };
 
   const activeFilterCount = Object.values(filters).filter(Boolean).length + (searchTerm ? 1 : 0);
+
+  const skillLevels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
   return (
     <Layout>
@@ -573,130 +513,148 @@ const CourseCatalogPage: React.FC = () => {
         {/* Results Summary */}
         <div className="flex items-center justify-between">
           <p className="text-primary-white/70">
-            Showing {paginatedCourses.length} of {filteredCourses.length} courses
+            {loading ? 'Loading courses...' : `Showing ${paginatedCourses.length} of ${filteredCourses.length} courses`}
           </p>
-          <div className="text-sm text-primary-white/70">
-            Page {currentPage} of {totalPages}
-          </div>
+          {totalPages > 0 && (
+            <div className="text-sm text-primary-white/70">
+              Page {currentPage} of {totalPages}
+            </div>
+          )}
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <Loader size={40} className="text-primary-orange animate-spin mx-auto mb-4" />
+              <p className="text-primary-white">Loading courses...</p>
+            </div>
+          </div>
+        )}
 
         {/* Course Grid/List */}
-        <div className={`${
-          viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-            : 'space-y-6'
-        }`}>
-          {paginatedCourses.map((course, index) => (
-            <motion.div
-              key={course.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <Card className={`h-full bg-primary-black/50 border-primary-gray/30 hover:border-primary-orange/50 transition-all duration-300 ${
-                course.featured ? 'ring-2 ring-primary-orange/50' : ''
-              } ${viewMode === 'list' ? 'flex flex-col lg:flex-row' : ''}`}>
-                {course.featured && (
-                  <div className="bg-primary-orange text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">
-                    MOST POPULAR
-                  </div>
-                )}
-
-                {/* Course Image */}
-                {course.image_url && (
-                  <div className={`${viewMode === 'list' ? 'lg:w-64 lg:flex-shrink-0' : ''} mb-4 lg:mb-0`}>
-                    <img
-                      src={course.image_url}
-                      alt={course.title}
-                      className={`w-full object-cover rounded-lg ${
-                        viewMode === 'list' ? 'h-48 lg:h-full' : 'h-48'
-                      }`}
-                    />
-                  </div>
-                )}
-
-                <div className={`${viewMode === 'list' ? 'lg:ml-6 flex-1' : ''} flex flex-col h-full`}>
-                  {/* Category and Rating */}
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-robotic-blue bg-robotic-blue/20 px-2 py-1 rounded">
-                      {course.category}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Star size={14} className="text-yellow-400 fill-current" />
-                      <span className="text-sm text-primary-white">{course.rating}</span>
-                      <span className="text-xs text-primary-gray">({course.total_students})</span>
+        {!loading && (
+          <div className={`${
+            viewMode === 'grid' 
+              ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+              : 'space-y-6'
+          }`}>
+            {paginatedCourses.map((course, index) => (
+              <motion.div
+                key={course.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <Card className={`h-full bg-primary-black/50 border-primary-gray/30 hover:border-primary-orange/50 transition-all duration-300 ${
+                  course.featured ? 'ring-2 ring-primary-orange/50' : ''
+                } ${viewMode === 'list' ? 'flex flex-col lg:flex-row' : ''}`}>
+                  {course.featured && (
+                    <div className="bg-primary-orange text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">
+                      MOST POPULAR
                     </div>
-                  </div>
+                  )}
 
-                  {/* Title and Description */}
-                  <h3 className="text-xl font-bold text-primary-white mb-2">{course.title}</h3>
-                  <p className="text-primary-white/70 text-sm mb-4 flex-1 line-clamp-3">
-                    {course.description}
-                  </p>
-
-                  {/* Course Details */}
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-primary-orange" />
-                      <span className="text-sm text-primary-white">{course.duration}h</span>
+                  {/* Course Image */}
+                  {course.image_url && (
+                    <div className={`${viewMode === 'list' ? 'lg:w-64 lg:flex-shrink-0' : ''} mb-4 lg:mb-0`}>
+                      <img
+                        src={course.image_url}
+                        alt={course.title}
+                        className={`w-full object-cover rounded-lg ${
+                          viewMode === 'list' ? 'h-48 lg:h-full' : 'h-48'
+                        }`}
+                        onError={(e) => {
+                          // Fallback image if the random one fails to load
+                          (e.target as HTMLImageElement).src = 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg';
+                        }}
+                      />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <BookOpen size={16} className="text-robotic-blue" />
-                      <span className={`text-xs px-2 py-1 rounded capitalize ${getSkillLevelColor(course.skill_level)}`}>
-                        {course.skill_level}
+                  )}
+
+                  <div className={`${viewMode === 'list' ? 'lg:ml-6 flex-1' : ''} flex flex-col h-full`}>
+                    {/* Category and Rating */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-robotic-blue bg-robotic-blue/20 px-2 py-1 rounded">
+                        {course.category}
                       </span>
+                      <div className="flex items-center gap-1">
+                        <Star size={14} className="text-yellow-400 fill-current" />
+                        <span className="text-sm text-primary-white">{course.rating}</span>
+                        <span className="text-xs text-primary-gray">({course.total_students})</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-robotic-green" />
-                      <span className="text-sm text-primary-white">{course.total_students} students</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar size={16} className="text-robotic-purple" />
-                      <span className="text-sm text-primary-white">
-                        {new Date(course.start_date).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Learning Outcomes */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-semibold text-primary-white mb-2">Learning Outcomes:</h4>
-                    <ul className="space-y-1">
-                      {course.learning_outcomes.slice(0, 3).map((outcome, idx) => (
-                        <li key={idx} className="flex items-start gap-2">
-                          <CheckCircle size={12} className="text-robotic-green mt-0.5 flex-shrink-0" />
-                          <span className="text-xs text-primary-white/70">{outcome}</span>
-                        </li>
-                      ))}
-                      {course.learning_outcomes.length > 3 && (
-                        <li className="text-xs text-primary-orange">
-                          +{course.learning_outcomes.length - 3} more outcomes
-                        </li>
-                      )}
-                    </ul>
-                  </div>
+                    {/* Title and Description */}
+                    <h3 className="text-xl font-bold text-primary-white mb-2">{course.title}</h3>
+                    <p className="text-primary-white/70 text-sm mb-4 flex-1 line-clamp-3">
+                      {course.description}
+                    </p>
 
-                  {/* Price and Enroll */}
-                  <div className="flex items-center justify-between mt-auto">
-                    <div className="text-2xl font-bold text-primary-orange">
-                      {formatPrice(course.price, course.currency)}
+                    {/* Course Details */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="flex items-center gap-2">
+                        <Clock size={16} className="text-primary-orange" />
+                        <span className="text-sm text-primary-white">{course.duration}m</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BookOpen size={16} className="text-robotic-blue" />
+                        <span className={`text-xs px-2 py-1 rounded capitalize ${getSkillLevelColor(course.skill_level)}`}>
+                          {course.skill_level}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-robotic-green" />
+                        <span className="text-sm text-primary-white">{course.total_students} students</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-robotic-purple" />
+                        <span className="text-sm text-primary-white">
+                          {new Date(course.start_date).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <Button 
-                      variant={course.featured ? "primary" : "secondary"} 
-                      onClick={() => handleEnrollNow(course.id)}
-                    >
-                      Enroll Now
-                      <ArrowRight size={16} />
-                    </Button>
+
+                    {/* Learning Outcomes */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-semibold text-primary-white mb-2">Learning Outcomes:</h4>
+                      <ul className="space-y-1">
+                        {course.learning_outcomes.slice(0, 3).map((outcome, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <CheckCircle size={12} className="text-robotic-green mt-0.5 flex-shrink-0" />
+                            <span className="text-xs text-primary-white/70">{outcome}</span>
+                          </li>
+                        ))}
+                        {course.learning_outcomes.length > 3 && (
+                          <li className="text-xs text-primary-orange">
+                            +{course.learning_outcomes.length - 3} more outcomes
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Price and Enroll */}
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="text-2xl font-bold text-primary-orange">
+                        {formatPrice(course.price, course.currency)}
+                      </div>
+                      <Button 
+                        variant={course.featured ? "primary" : "secondary"} 
+                        onClick={() => handleEnrollNow(course.id)}
+                      >
+                        View Details
+                        <ArrowRight size={16} />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
 
         {/* No Results */}
-        {filteredCourses.length === 0 && (
+        {!loading && filteredCourses.length === 0 && (
           <Card className="text-center py-12 bg-primary-black/50 border-primary-gray/30">
             <BookOpen size={48} className="text-primary-gray mx-auto mb-4" />
             <h3 className="text-xl font-bold text-primary-white mb-2">

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -26,16 +26,100 @@ import {
   X,
   Clock,
   Search,
-  Filter
+  Filter,
+  Loader
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
+import { supabase } from '../lib/supabase';
+import { Course } from '../types';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('All');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<string[]>(['All']);
+
+  // Fetch certifications from Supabase and convert to course format
+  useEffect(() => {
+    const fetchCertifications = async () => {
+      setLoading(true);
+      try {
+        // Fetch certifications
+        const { data: certifications, error } = await supabase
+          .from('certifications')
+          .select(`
+            *,
+            certification_details (*)
+          `)
+          .eq('is_active', true)
+          .limit(6); // Limit to 6 for the landing page
+
+        if (error) {
+          throw error;
+        }
+
+        // Extract unique categories
+        const uniqueProviders = new Set<string>();
+        certifications?.forEach(cert => {
+          if (cert.provider) {
+            uniqueProviders.add(cert.provider);
+          }
+        });
+
+        // Set categories
+        setCategories(['All', ...Array.from(uniqueProviders)]);
+
+        // Convert certifications to course format
+        const formattedCourses: Course[] = certifications?.map(cert => {
+          // Get details from certification_details if available
+          const details = cert.certification_details || {};
+          const metadata = details.metadata || {};
+          
+          return {
+            id: cert.id,
+            title: cert.name,
+            description: cert.description,
+            category: cert.provider || 'Uncategorized',
+            certification_type: 'Professional',
+            duration: cert.duration || 60, // Duration in minutes
+            skill_level: metadata.difficulty_level || 'intermediate',
+            price: 35000, // Default price
+            currency: 'PHP',
+            start_date: new Date().toISOString().split('T')[0], // Today's date
+            instructor: 'Expert Instructor',
+            learning_outcomes: details.learning_outcomes || [
+              "Complete certification exam successfully",
+              "Gain industry-recognized credentials",
+              "Demonstrate professional competence"
+            ],
+            prerequisites: details.prerequisites?.map((p: any) => p.description) || ['Basic knowledge in the field'],
+            modules: [],
+            featured: Math.random() > 0.7, // Randomly mark some as featured
+            image_url: `https://images.pexels.com/photos/${Math.floor(Math.random() * 1000000)}/pexels-photo.jpeg`,
+            rating: (4 + Math.random()).toFixed(1),
+            total_students: Math.floor(Math.random() * 2000) + 500,
+            is_active: cert.is_active,
+            created_at: cert.created_at,
+            updated_at: cert.updated_at
+          };
+        }) || [];
+
+        setCourses(formattedCourses);
+      } catch (error) {
+        console.error('Error fetching certifications:', error);
+        // Fallback to empty array
+        setCourses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCertifications();
+  }, []);
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -47,8 +131,8 @@ const LandingPage: React.FC = () => {
     navigate('/auth');
   };
 
-  const handleEnrollNow = () => {
-    navigate('/auth');
+  const handleEnrollNow = (courseId: string) => {
+    navigate(`/courses/${courseId}`);
   };
 
   const features = [
@@ -68,78 +152,6 @@ const LandingPage: React.FC = () => {
       description: "Choose from multiple learning formats designed to fit your schedule and learning preferences."
     }
   ];
-
-  // Minimalist course catalog data
-  const courses = [
-    {
-      id: '1',
-      title: "CompTIA Security+",
-      category: "Cybersecurity",
-      price: "₱35,000",
-      duration: "40 hours",
-      startDate: "Feb 15, 2025",
-      featured: true,
-      rating: 4.8,
-      students: 1250
-    },
-    {
-      id: '2',
-      title: "PCB Design Fundamentals",
-      category: "Electronics",
-      price: "₱28,000",
-      duration: "32 hours",
-      startDate: "Mar 1, 2025",
-      featured: false,
-      rating: 4.6,
-      students: 890
-    },
-    {
-      id: '3',
-      title: "Robotics Programming",
-      category: "Robotics",
-      price: "₱42,000",
-      duration: "48 hours",
-      startDate: "Feb 22, 2025",
-      featured: false,
-      rating: 4.9,
-      students: 567
-    },
-    {
-      id: '4',
-      title: "Python for Data Science",
-      category: "Programming",
-      price: "₱32,000",
-      duration: "36 hours",
-      startDate: "Mar 15, 2025",
-      featured: true,
-      rating: 4.7,
-      students: 2100
-    },
-    {
-      id: '5',
-      title: "Cloud Computing Essentials",
-      category: "Cloud Computing",
-      price: "₱38,000",
-      duration: "44 hours",
-      startDate: "Apr 1, 2025",
-      featured: false,
-      rating: 4.5,
-      students: 1450
-    },
-    {
-      id: '6',
-      title: "IoT Development Bootcamp",
-      category: "IoT",
-      price: "₱35,000",
-      duration: "40 hours",
-      startDate: "Mar 20, 2025",
-      featured: true,
-      rating: 4.6,
-      students: 780
-    }
-  ];
-
-  const categories = ['All', 'Cybersecurity', 'Electronics', 'Robotics', 'Programming', 'Cloud Computing', 'IoT'];
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -380,78 +392,129 @@ const LandingPage: React.FC = () => {
             </div>
           </motion.div>
 
+          {/* Loading State */}
+          {loading && (
+            <div className="flex justify-center items-center py-20">
+              <div className="text-center">
+                <Loader size={40} className="text-primary-orange animate-spin mx-auto mb-4" />
+                <p className="text-primary-white">Loading courses...</p>
+              </div>
+            </div>
+          )}
+
           {/* Clean Grid Layout with Consistent Spacing */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCourses.map((course, index) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="h-full"
+          {!loading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredCourses.map((course, index) => (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="h-full"
+                >
+                  <Card className={`h-full bg-primary-black/50 border-primary-gray/30 hover:border-primary-orange/50 transition-all duration-300 flex flex-col ${
+                    course.featured ? 'ring-2 ring-primary-orange/50' : ''
+                  }`}>
+                    {/* Featured Badge */}
+                    {course.featured && (
+                      <div className="bg-primary-orange text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4 self-start">
+                        FEATURED
+                      </div>
+                    )}
+                    
+                    {/* Category Tag */}
+                    <div className="mb-4">
+                      <span className="text-sm font-medium text-robotic-blue bg-robotic-blue/20 px-3 py-1 rounded-full">
+                        {course.category}
+                      </span>
+                    </div>
+                    
+                    {/* Course Title */}
+                    <h3 className="text-xl font-bold text-primary-white mb-4 flex-grow-0">
+                      {course.title}
+                    </h3>
+                    
+                    {/* Course Details Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-6 flex-grow">
+                      <div className="flex items-center gap-2">
+                        <Clock size={16} className="text-primary-orange flex-shrink-0" />
+                        <span className="text-sm text-primary-white">{course.duration}m</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar size={16} className="text-robotic-blue flex-shrink-0" />
+                        <span className="text-sm text-primary-white">{new Date(course.start_date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Star size={16} className="text-yellow-400 flex-shrink-0" />
+                        <span className="text-sm text-primary-white">{course.rating}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={16} className="text-robotic-green flex-shrink-0" />
+                        <span className="text-sm text-primary-white">{course.total_students}</span>
+                      </div>
+                    </div>
+
+                    {/* Price and Enroll Button */}
+                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-primary-gray/20">
+                      <div className="text-2xl font-bold text-primary-orange">
+                        ₱{course.price.toLocaleString()}
+                      </div>
+                      <Button 
+                        variant={course.featured ? "primary" : "secondary"} 
+                        onClick={() => handleEnrollNow(course.id)}
+                        className="flex-shrink-0"
+                      >
+                        View Details
+                        <ArrowRight size={16} />
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* No Results */}
+          {!loading && filteredCourses.length === 0 && (
+            <div className="text-center py-12">
+              <BookOpen size={48} className="text-primary-gray mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-primary-white mb-2">
+                No courses found
+              </h3>
+              <p className="text-primary-gray mb-6">
+                {searchTerm || selectedCategory !== 'All'
+                  ? 'Try adjusting your search or filter criteria'
+                  : 'No courses are currently available'
+                }
+              </p>
+              {(searchTerm || selectedCategory !== 'All') && (
+                <Button 
+                  variant="primary" 
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedCategory('All');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* View All Courses Button */}
+          {!loading && filteredCourses.length > 0 && (
+            <div className="text-center mt-12">
+              <Button 
+                variant="primary" 
+                onClick={() => navigate('/courses')}
+                className="px-8"
               >
-                <Card className={`h-full bg-primary-black/50 border-primary-gray/30 hover:border-primary-orange/50 transition-all duration-300 flex flex-col ${
-                  course.featured ? 'ring-2 ring-primary-orange/50' : ''
-                }`}>
-                  {/* Featured Badge */}
-                  {course.featured && (
-                    <div className="bg-primary-orange text-white text-xs font-bold px-3 py-1 rounded-full inline-block mb-4 self-start">
-                      FEATURED
-                    </div>
-                  )}
-                  
-                  {/* Category Tag */}
-                  <div className="mb-4">
-                    <span className="text-sm font-medium text-robotic-blue bg-robotic-blue/20 px-3 py-1 rounded-full">
-                      {course.category}
-                    </span>
-                  </div>
-                  
-                  {/* Course Title */}
-                  <h3 className="text-xl font-bold text-primary-white mb-4 flex-grow-0">
-                    {course.title}
-                  </h3>
-                  
-                  {/* Course Details Grid */}
-                  <div className="grid grid-cols-2 gap-4 mb-6 flex-grow">
-                    <div className="flex items-center gap-2">
-                      <Clock size={16} className="text-primary-orange flex-shrink-0" />
-                      <span className="text-sm text-primary-white">{course.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar size={16} className="text-robotic-blue flex-shrink-0" />
-                      <span className="text-sm text-primary-white">{course.startDate}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star size={16} className="text-yellow-400 flex-shrink-0" />
-                      <span className="text-sm text-primary-white">{course.rating}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users size={16} className="text-robotic-green flex-shrink-0" />
-                      <span className="text-sm text-primary-white">{course.students}</span>
-                    </div>
-                  </div>
-
-                  {/* Price and Enroll Button */}
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-primary-gray/20">
-                    <div className="text-2xl font-bold text-primary-orange">
-                      {course.price}
-                    </div>
-                    <Button 
-                      variant={course.featured ? "primary" : "secondary"} 
-                      onClick={handleEnrollNow}
-                      className="flex-shrink-0"
-                    >
-                      Enroll Now
-                      <ArrowRight size={16} />
-                    </Button>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Removed View All Courses Button */}
+                View All Courses
+                <ArrowRight size={20} />
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -655,9 +718,9 @@ const LandingPage: React.FC = () => {
                     <label className="block text-sm font-medium text-primary-white mb-2">Course Interest</label>
                     <select className="w-full px-4 py-3 bg-primary-black border border-primary-gray rounded-lg text-primary-white focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent">
                       <option>Select a course</option>
-                      <option>CompTIA Security+</option>
-                      <option>PCB Design Fundamentals</option>
-                      <option>Robotics Programming</option>
+                      {courses.map(course => (
+                        <option key={course.id}>{course.title}</option>
+                      ))}
                       <option>Other</option>
                     </select>
                   </div>
@@ -721,11 +784,22 @@ const LandingPage: React.FC = () => {
             <div>
               <h3 className="text-lg font-semibold text-primary-white mb-6">Programs</h3>
               <ul className="space-y-3">
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Cybersecurity</a></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Electronics</a></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Robotics</a></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">IT Fundamentals</a></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Professional Development</a></li>
+                {categories.filter(cat => cat !== 'All').slice(0, 5).map((category, index) => (
+                  <li key={index}>
+                    <a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">
+                      {category}
+                    </a>
+                  </li>
+                ))}
+                {categories.length <= 1 && (
+                  <>
+                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Cybersecurity</a></li>
+                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Electronics</a></li>
+                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Robotics</a></li>
+                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">IT Fundamentals</a></li>
+                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Professional Development</a></li>
+                  </>
+                )}
               </ul>
             </div>
 

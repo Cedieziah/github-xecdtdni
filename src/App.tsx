@@ -12,6 +12,8 @@ import AuthConfirm from './components/auth/AuthConfirm';
 import Dashboard from './pages/Dashboard';
 import CertificationsPage from './pages/CertificationsPage';
 import CourseCatalogPage from './pages/CourseCatalogPage';
+import CertificationDetailsPage from './pages/CertificationDetailsPage';
+import NonAuthCertificationPage from './pages/NonAuthCertificationPage';
 import ExamPage from './pages/ExamPage';
 import ExamResultsPage from './pages/ExamResultsPage';
 import AdminCertifications from './pages/admin/AdminCertifications';
@@ -33,6 +35,7 @@ const AppRoutes: React.FC = () => {
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/courses" element={<CourseCatalogPage />} />
+        <Route path="/courses/:id" element={isAuthenticated ? <CertificationDetailsPage /> : <NonAuthCertificationPage />} />
         <Route path="/auth/confirm" element={<AuthConfirm />} />
         
         {/* Protected routes */}
@@ -47,6 +50,7 @@ const AppRoutes: React.FC = () => {
             <Route path="/app/dashboard" element={<Dashboard />} />
             <Route path="/app/certifications" element={<CertificationsPage />} />
             <Route path="/app/courses" element={<CourseCatalogPage />} />
+            <Route path="/app/courses/:id" element={<CertificationDetailsPage />} />
             <Route path="/app/exam/:certificationId" element={<ExamPage />} />
             <Route path="/app/exam/session/:sessionId" element={<ExamPage />} />
             <Route path="/app/exam-results/:sessionId" element={<ExamResultsPage />} />

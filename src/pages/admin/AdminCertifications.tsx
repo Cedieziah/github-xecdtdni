@@ -14,18 +14,26 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  Info,
+  FileText
 } from 'lucide-react';
 import { RootState } from '../../store';
-import { fetchCertifications, createCertification, updateCertification, deleteCertification } from '../../store/slices/adminSlice';
+import { 
+  fetchCertifications, 
+  createCertificationWithDetails, 
+  updateCertificationWithDetails, 
+  deleteCertification 
+} from '../../store/slices/adminSlice';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
-import CertificationForm from '../../components/admin/CertificationForm';
+import CertificationDetailsForm, { CertificationFormData } from '../../components/admin/CertificationDetailsForm';
 import { Certification } from '../../types';
 import { supabase } from '../../lib/supabase';
+import toast from 'react-hot-toast';
 
 const AdminCertifications: React.FC = () => {
   const dispatch = useDispatch();
@@ -35,6 +43,8 @@ const AdminCertifications: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCertification, setEditingCertification] = useState<Certification | null>(null);
   const [certificationStats, setCertificationStats] = useState<Record<string, any>>({});
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedCertificationDetails, setSelectedCertificationDetails] = useState<any>(null);
 
   useEffect(() => {
     dispatch(fetchCertifications());
@@ -125,18 +135,56 @@ const AdminCertifications: React.FC = () => {
   };
 
   const handleDeleteCertification = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this certification?')) {
-      dispatch(deleteCertification(id));
+    if (window.confirm('Are you sure you want to delete this certification? This will also delete all associated questions and exam data.')) {
+      try {
+        await dispatch(deleteCertification(id));
+        toast.success('Certification deleted successfully');
+      } catch (error) {
+        toast.error('Failed to delete certification');
+      }
     }
   };
 
-  const handleSubmitCertification = (certificationData: Partial<Certification>) => {
-    if (editingCertification) {
-      dispatch(updateCertification({ id: editingCertification.id, ...certificationData }));
-    } else {
-      dispatch(createCertification(certificationData));
+  const handleViewDetails = async (certification: Certification) => {
+    try {
+      // Fetch detailed certification information
+      const { data, error } = await supabase
+        .from('certifications_with_details')
+        .select('*')
+        .eq('id', certification.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching certification details:', error);
+        toast.error('Failed to load certification details');
+        return;
+      }
+
+      setSelectedCertificationDetails(data);
+      setShowDetailsModal(true);
+    } catch (error) {
+      console.error('Error viewing certification details:', error);
+      toast.error('Failed to load certification details');
     }
-    setIsModalOpen(false);
+  };
+
+  const handleSubmitCertification = async (formData: CertificationFormData) => {
+    try {
+      if (editingCertification) {
+        await dispatch(updateCertificationWithDetails({ 
+          id: editingCertification.id, 
+          formData 
+        }));
+        toast.success('Certification updated successfully');
+      } else {
+        await dispatch(createCertificationWithDetails(formData));
+        
+        toast.success('Certification created successfully');
+      }
+      setIsModalOpen(false);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to save certification');
+    }
   };
 
   return (
@@ -149,13 +197,51 @@ const AdminCertifications: React.FC = () => {
               Certifications Management
             </h1>
             <p className="text-primary-gray">
-              Create and manage certification programs
+              Create and manage comprehensive certification programs with detailed requirements
             </p>
           </div>
           <Button variant="primary" onClick={handleCreateCertification}>
             <Plus size={20} />
             Create Certification
           </Button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="text-center">
+            <div className="w-12 h-12 bg-robotic-blue/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <Shield size={24} className="text-robotic-blue" />
+            </div>
+            <p className="text-2xl font-bold text-primary-white">{certifications.length}</p>
+            <p className="text-primary-gray text-sm">Total Certifications</p>
+          </Card>
+          <Card className="text-center">
+            <div className="w-12 h-12 bg-robotic-green/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <CheckCircle size={24} className="text-robotic-green" />
+            </div>
+            <p className="text-2xl font-bold text-primary-white">
+              {certifications.filter(c => c.is_active).length}
+            </p>
+            <p className="text-primary-gray text-sm">Active</p>
+          </Card>
+          <Card className="text-center">
+            <div className="w-12 h-12 bg-primary-orange/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <HelpCircle size={24} className="text-primary-orange" />
+            </div>
+            <p className="text-2xl font-bold text-primary-white">
+              {Object.values(certificationStats).filter(s => s.canTakeExam).length}
+            </p>
+            <p className="text-primary-gray text-sm">Exam Ready</p>
+          </Card>
+          <Card className="text-center">
+            <div className="w-12 h-12 bg-red-500/20 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <AlertTriangle size={24} className="text-red-500" />
+            </div>
+            <p className="text-2xl font-bold text-primary-white">
+              {Object.values(certificationStats).filter(s => s.issues && s.issues.length > 0).length}
+            </p>
+            <p className="text-primary-gray text-sm">Need Attention</p>
+          </Card>
         </div>
 
         {/* Filters */}
@@ -176,21 +262,21 @@ const AdminCertifications: React.FC = () => {
                 size="sm"
                 onClick={() => setFilterStatus('all')}
               >
-                All
+                All ({certifications.length})
               </Button>
               <Button
                 variant={filterStatus === 'active' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setFilterStatus('active')}
               >
-                Active
+                Active ({certifications.filter(c => c.is_active).length})
               </Button>
               <Button
                 variant={filterStatus === 'inactive' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setFilterStatus('inactive')}
               >
-                Inactive
+                Inactive ({certifications.filter(c => !c.is_active).length})
               </Button>
             </div>
           </div>
@@ -237,7 +323,7 @@ const AdminCertifications: React.FC = () => {
                     {certification.description}
                   </p>
 
-                  {/* Question Statistics - Now in Admin Panel */}
+                  {/* Question Statistics */}
                   {stats && (
                     <div className="mb-4 p-3 bg-primary-gray/10 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
@@ -293,30 +379,45 @@ const AdminCertifications: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="text-sm">
                       <span className="text-primary-gray">Pass Score: </span>
                       <span className="text-primary-orange font-medium">
                         {certification.passing_score}%
                       </span>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditCertification(certification)}
-                      >
-                        <Edit size={16} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteCertification(certification.id)}
-                        className="hover:bg-red-500/20 hover:text-red-400"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
+                    {certification.access_code && (
+                      <div className="text-xs text-yellow-500 bg-yellow-500/20 px-2 py-1 rounded">
+                        Protected
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleViewDetails(certification)}
+                      className="flex-1"
+                    >
+                      <Eye size={16} />
+                      Details
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditCertification(certification)}
+                    >
+                      <Edit size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteCertification(certification.id)}
+                      className="hover:bg-red-500/20 hover:text-red-400"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 </Card>
               </motion.div>
@@ -350,13 +451,104 @@ const AdminCertifications: React.FC = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title={editingCertification ? 'Edit Certification' : 'Create Certification'}
-          size="lg"
+          size="xl"
         >
-          <CertificationForm
+          <CertificationDetailsForm
             certification={editingCertification}
             onSubmit={handleSubmitCertification}
             onCancel={() => setIsModalOpen(false)}
           />
+        </Modal>
+
+        {/* Certification Details Modal */}
+        <Modal
+          isOpen={showDetailsModal}
+          onClose={() => setShowDetailsModal(false)}
+          title="Certification Details"
+          size="xl"
+        >
+          {selectedCertificationDetails && (
+            <div className="space-y-6">
+              {/* Basic Info */}
+              <div>
+                <h3 className="text-lg font-bold text-primary-white mb-4">Basic Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-primary-gray">Name</p>
+                    <p className="text-primary-white font-medium">{selectedCertificationDetails.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary-gray">Provider</p>
+                    <p className="text-primary-white font-medium">{selectedCertificationDetails.provider}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary-gray">Duration</p>
+                    <p className="text-primary-white font-medium">{selectedCertificationDetails.duration} minutes</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-primary-gray">Passing Score</p>
+                    <p className="text-primary-white font-medium">{selectedCertificationDetails.passing_score}%</p>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <p className="text-sm text-primary-gray">Description</p>
+                  <p className="text-primary-white">{selectedCertificationDetails.description}</p>
+                </div>
+              </div>
+
+              {/* Prerequisites */}
+              {selectedCertificationDetails.prerequisites && (
+                <div>
+                  <h3 className="text-lg font-bold text-primary-white mb-4">Prerequisites</h3>
+                  <div className="space-y-2">
+                    {selectedCertificationDetails.prerequisites.map((prereq: any, index: number) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-primary-gray/10 rounded-lg">
+                        <div className="w-2 h-2 bg-primary-orange rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <p className="text-primary-white font-medium">{prereq.description}</p>
+                          <div className="flex gap-4 mt-1">
+                            {prereq.required && (
+                              <span className="text-xs text-red-400 bg-red-400/20 px-2 py-1 rounded">Required</span>
+                            )}
+                            {prereq.recommended && (
+                              <span className="text-xs text-yellow-400 bg-yellow-400/20 px-2 py-1 rounded">Recommended</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Learning Outcomes */}
+              {selectedCertificationDetails.learning_outcomes && (
+                <div>
+                  <h3 className="text-lg font-bold text-primary-white mb-4">Learning Outcomes</h3>
+                  <div className="space-y-2">
+                    {selectedCertificationDetails.learning_outcomes.map((outcome: string, index: number) => (
+                      <div key={index} className="flex items-start gap-3">
+                        <CheckCircle size={16} className="text-robotic-green mt-0.5 flex-shrink-0" />
+                        <p className="text-primary-white">{outcome}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Examination Details */}
+              {selectedCertificationDetails.examination_details && (
+                <div>
+                  <h3 className="text-lg font-bold text-primary-white mb-4">Examination Details</h3>
+                  <div className="bg-primary-gray/10 rounded-lg p-4">
+                    <pre className="text-primary-white text-sm whitespace-pre-wrap">
+                      {JSON.stringify(selectedCertificationDetails.examination_details, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </Modal>
       </div>
     </Layout>
