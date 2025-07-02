@@ -272,13 +272,122 @@ export const updateCertification = createAsyncThunk(
 export const deleteCertification = createAsyncThunk(
   'admin/deleteCertification',
   async (id: string) => {
-    const { error } = await supabase
-      .from('certifications')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    return id;
+    try {
+      console.log('🗑️ Starting cascading delete for certification:', id);
+
+      // Step 1: Get all exam sessions for this certification
+      const { data: examSessions, error: examSessionsError } = await supabase
+        .from('exam_sessions')
+        .select('id')
+        .eq('certification_id', id);
+
+      if (examSessionsError) throw examSessionsError;
+
+      const examSessionIds = examSessions?.map(session => session.id) || [];
+      console.log('📋 Found exam sessions to delete:', examSessionIds.length);
+
+      // Step 2: Delete exam answers for all exam sessions
+      if (examSessionIds.length > 0) {
+        const { error: examAnswersError } = await supabase
+          .from('exam_answers')
+          .delete()
+          .in('exam_session_id', examSessionIds);
+
+        if (examAnswersError) throw examAnswersError;
+        console.log('✅ Deleted exam answers');
+
+        // Step 3: Delete exam questions for all exam sessions
+        const { error: examQuestionsError } = await supabase
+          .from('exam_questions')
+          .delete()
+          .in('exam_session_id', examSessionIds);
+
+        if (examQuestionsError) throw examQuestionsError;
+        console.log('✅ Deleted exam questions');
+
+        // Step 4: Delete certificates linked to exam sessions
+        const { error: certificatesError } = await supabase
+          .from('certificates')
+          .delete()
+          .in('exam_session_id', examSessionIds);
+
+        if (certificatesError) throw certificatesError;
+        console.log('✅ Deleted certificates');
+
+        // Step 5: Delete exam sessions
+        const { error: examSessionsDeleteError } = await supabase
+          .from('exam_sessions')
+          .delete()
+          .in('id', examSessionIds);
+
+        if (examSessionsDeleteError) throw examSessionsDeleteError;
+        console.log('✅ Deleted exam sessions');
+      }
+
+      // Step 6: Get all questions for this certification
+      const { data: questions, error: questionsError } = await supabase
+        .from('questions')
+        .select('id')
+        .eq('certification_id', id);
+
+      if (questionsError) throw questionsError;
+
+      const questionIds = questions?.map(question => question.id) || [];
+      console.log('❓ Found questions to delete:', questionIds.length);
+
+      // Step 7: Delete answer options for all questions
+      if (questionIds.length > 0) {
+        const { error: answerOptionsError } = await supabase
+          .from('answer_options')
+          .delete()
+          .in('question_id', questionIds);
+
+        if (answerOptionsError) throw answerOptionsError;
+        console.log('✅ Deleted answer options');
+
+        // Step 8: Delete questions
+        const { error: questionsDeleteError } = await supabase
+          .from('questions')
+          .delete()
+          .in('id', questionIds);
+
+        if (questionsDeleteError) throw questionsDeleteError;
+        console.log('✅ Deleted questions');
+      }
+
+      // Step 9: Delete question categories
+      const { error: categoriesError } = await supabase
+        .from('question_categories')
+        .delete()
+        .eq('certification_id', id);
+
+      if (categoriesError) throw categoriesError;
+      console.log('✅ Deleted question categories');
+
+      // Step 10: Delete certification details
+      const { error: detailsError } = await supabase
+        .from('certification_details')
+        .delete()
+        .eq('certification_id', id);
+
+      if (detailsError) throw detailsError;
+      console.log('✅ Deleted certification details');
+
+      // Step 11: Finally delete the certification itself
+      const { error: certificationError } = await supabase
+        .from('certifications')
+        .delete()
+        .eq('id', id);
+
+      if (certificationError) throw certificationError;
+      console.log('✅ Deleted certification');
+
+      console.log('🎉 Cascading delete completed successfully');
+      return id;
+    } catch (error: any) {
+      console.error('❌ Error during cascading delete:', error);
+      throw new Error(`Failed to delete certification: ${error.message}`);
+    }
   }
 );
 
@@ -631,8 +740,17 @@ const adminSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || 'Failed to update certification';
       })
+      .addCase(deleteCertification.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(deleteCertification.fulfilled, (state, action) => {
+        state.loading = false;
         state.certifications = state.certifications.filter(c => c.id !== action.payload);
+      })
+      .addCase(deleteCertification.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || 'Failed to delete certification';
       })
       
       // Questions

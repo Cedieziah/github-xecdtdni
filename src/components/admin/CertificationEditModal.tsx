@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Save, X, AlertTriangle, Info } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import { Certification } from '../../types';
 import { supabase } from '../../lib/supabase';
-import { mapDatabaseToFormData } from '../../utils/certificationQueries';
+import { mapDatabaseToFormData } from '../../utils/certificationMappers';
 import Modal from '../ui/Modal';
 import Button from '../ui/Button';
 import CertificationDetailsForm, { CertificationFormData } from './CertificationDetailsForm';
+import ConfirmationModal from '../ui/ConfirmationModal';
 import toast from 'react-hot-toast';
 
 interface CertificationEditModalProps {
@@ -29,8 +30,15 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const { certifications } = useSelector((state: RootState) => state.admin);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Store original form data for comparison
+  const originalFormData = useRef<CertificationFormData | null>(null);
+  
+  // Track if the modal is attempting to close
+  const isClosing = useRef(false);
 
   // Fetch full certification details when modal opens
   useEffect(() => {
@@ -68,6 +76,7 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
           // Map database data to form structure
           const mappedFormData = mapDatabaseToFormData(data);
           setFormData(mappedFormData);
+          originalFormData.current = JSON.parse(JSON.stringify(mappedFormData));
           setIsInitialized(true);
           setHasChanges(false);
         }
@@ -86,6 +95,7 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
     
     if (isOpen) {
       fetchCertificationDetails();
+      isClosing.current = false;
     }
     
     // Cleanup function to prevent state updates after unmount
@@ -104,6 +114,7 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
         setHasChanges(false);
         setShowConfirmation(false);
         setIsInitialized(false);
+        originalFormData.current = null;
       }, 300);
       
       return () => clearTimeout(timer);
@@ -113,7 +124,13 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
   // Use useCallback to prevent unnecessary re-renders
   const handleFormChange = useCallback((updatedFormData: CertificationFormData) => {
     setFormData(updatedFormData);
-    setHasChanges(true);
+    
+    // Check if there are actual changes by comparing with original data
+    if (originalFormData.current) {
+      // Simple deep comparison for detecting changes
+      const hasActualChanges = JSON.stringify(updatedFormData) !== JSON.stringify(originalFormData.current);
+      setHasChanges(hasActualChanges);
+    }
   }, []);
 
   const handleSubmit = async (data: CertificationFormData) => {
@@ -141,21 +158,28 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
     }
   };
 
-  const handleCancel = () => {
+  const handleRequestClose = () => {
     if (hasChanges) {
-      if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
-        onClose();
-      }
+      setShowUnsavedChangesModal(true);
     } else {
       onClose();
     }
+  };
+
+  const handleDiscardChanges = () => {
+    setShowUnsavedChangesModal(false);
+    onClose();
+  };
+
+  const handleContinueEditing = () => {
+    setShowUnsavedChangesModal(false);
   };
 
   return (
     <>
       <Modal
         isOpen={isOpen}
-        onClose={handleCancel}
+        onClose={handleRequestClose}
         title={certification ? 'Edit Certification' : 'Create Certification'}
         size="xl"
         showCloseButton={!loading}
@@ -187,7 +211,7 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
             certification={certification}
             initialFormData={formData}
             onSubmit={handleSubmit}
-            onCancel={handleCancel}
+            onCancel={handleRequestClose}
             onChange={handleFormChange}
             isSubmitting={loading}
           />
@@ -207,94 +231,29 @@ const CertificationEditModal: React.FC<CertificationEditModalProps> = ({
         )}
       </Modal>
 
-      {/* Confirmation Modal */}
-      <Modal
+      {/* Confirmation Modal for Saving Changes */}
+      <ConfirmationModal
         isOpen={showConfirmation}
         onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmSubmit}
         title="Confirm Changes"
-        size="md"
-      >
-        <div className="space-y-6">
-          <div className="bg-primary-orange/10 border border-primary-orange/30 rounded-lg p-4">
-            <div className="flex items-center gap-3">
-              <Info size={24} className="text-primary-orange" />
-              <div>
-                <h3 className="text-lg font-semibold text-primary-white">Review Your Changes</h3>
-                <p className="text-primary-gray">
-                  Please review your changes before saving. This will update the certification information for all users.
-                </p>
-              </div>
-            </div>
-          </div>
+        message="Please review your changes before saving. This will update the certification information for all users."
+        confirmText="Save Changes"
+        cancelText="Continue Editing"
+        type="info"
+      />
 
-          {formData && (
-            <div className="space-y-4">
-              <div className="border border-primary-gray/30 rounded-lg p-4 bg-primary-gray/5">
-                <h4 className="text-md font-semibold text-primary-white mb-2">Basic Information</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-primary-gray">Name:</span>
-                    <span className="text-primary-white ml-2">{formData.name}</span>
-                  </div>
-                  <div>
-                    <span className="text-primary-gray">Provider:</span>
-                    <span className="text-primary-white ml-2">{formData.provider}</span>
-                  </div>
-                  <div>
-                    <span className="text-primary-gray">Duration:</span>
-                    <span className="text-primary-white ml-2">{formData.duration} minutes</span>
-                  </div>
-                  <div>
-                    <span className="text-primary-gray">Passing Score:</span>
-                    <span className="text-primary-white ml-2">{formData.passing_score}%</span>
-                  </div>
-                  <div>
-                    <span className="text-primary-gray">Questions:</span>
-                    <span className="text-primary-white ml-2">{formData.total_questions}</span>
-                  </div>
-                  <div>
-                    <span className="text-primary-gray">Status:</span>
-                    <span className="text-primary-white ml-2">{formData.is_active ? 'Active' : 'Inactive'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border border-primary-gray/30 rounded-lg p-4 bg-primary-gray/5">
-                <h4 className="text-md font-semibold text-primary-white mb-2">Exam Coverage</h4>
-                <p className="text-primary-gray text-sm">
-                  {formData.exam_coverage.length} coverage items defined
-                </p>
-              </div>
-
-              <div className="border border-primary-gray/30 rounded-lg p-4 bg-primary-gray/5">
-                <h4 className="text-md font-semibold text-primary-white mb-2">Evaluation Criteria</h4>
-                <p className="text-primary-gray text-sm">
-                  {formData.examination_evaluation.length} evaluation components defined
-                </p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-4 pt-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => setShowConfirmation(false)}
-              disabled={loading}
-            >
-              <X size={16} />
-              Cancel
-            </Button>
-            <Button 
-              variant="primary" 
-              onClick={handleConfirmSubmit}
-              loading={loading}
-            >
-              <Save size={16} />
-              Confirm & Save
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {/* Unsaved Changes Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showUnsavedChangesModal}
+        onClose={handleContinueEditing}
+        onConfirm={handleDiscardChanges}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to discard them?"
+        confirmText="Discard Changes"
+        cancelText="Continue Editing"
+        type="danger"
+      />
     </>
   );
 };

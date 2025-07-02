@@ -33,6 +33,7 @@ import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import CertificationDetailsForm, { CertificationFormData } from '../../components/admin/CertificationDetailsForm';
 import CertificationEditModal from '../../components/admin/CertificationEditModal';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { Certification } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -48,6 +49,8 @@ const AdminCertifications: React.FC = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedCertificationDetails, setSelectedCertificationDetails] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchCertifications());
@@ -138,13 +141,18 @@ const AdminCertifications: React.FC = () => {
   };
 
   const handleDeleteCertification = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this certification? This will also delete all associated questions and exam data.')) {
-      try {
-        await dispatch(deleteCertification(id));
-        toast.success('Certification deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete certification');
-      }
+    setShowDeleteConfirmation(id);
+  };
+  
+  const confirmDeleteCertification = async () => {
+    if (!showDeleteConfirmation) return;
+    
+    try {
+      await dispatch(deleteCertification(showDeleteConfirmation));
+      toast.success('Certification deleted successfully');
+      setShowDeleteConfirmation(null);
+    } catch (error) {
+      toast.error('Failed to delete certification');
     }
   };
 
@@ -203,6 +211,20 @@ const AdminCertifications: React.FC = () => {
       toast.error(error.message || 'Failed to update certification');
       throw error;
     }
+  };
+  
+  const handleCloseModal = () => {
+    setShowUnsavedChangesModal(true);
+  };
+  
+  const handleConfirmCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingCertification(null);
+    setShowUnsavedChangesModal(false);
+  };
+  
+  const handleContinueEditing = () => {
+    setShowUnsavedChangesModal(false);
   };
 
   return (
@@ -467,14 +489,14 @@ const AdminCertifications: React.FC = () => {
         {/* Certification Form Modal (for new certifications) */}
         <Modal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          title={editingCertification ? 'Edit Certification' : 'Create Certification'}
+          onClose={handleCloseModal}
+          title="Create Certification"
           size="xl"
         >
           <CertificationDetailsForm
-            certification={editingCertification}
+            certification={null}
             onSubmit={handleSubmitCertification}
-            onCancel={() => setIsModalOpen(false)}
+            onCancel={handleCloseModal}
           />
         </Modal>
 
@@ -610,6 +632,30 @@ const AdminCertifications: React.FC = () => {
             </div>
           )}
         </Modal>
+        
+        {/* Unsaved Changes Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showUnsavedChangesModal}
+          onClose={handleContinueEditing}
+          onConfirm={handleConfirmCloseModal}
+          title="Unsaved Changes"
+          message="You have unsaved changes. Are you sure you want to discard them?"
+          confirmText="Discard Changes"
+          cancelText="Continue Editing"
+          type="danger"
+        />
+        
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteConfirmation !== null}
+          onClose={() => setShowDeleteConfirmation(null)}
+          onConfirm={confirmDeleteCertification}
+          title="Delete Certification"
+          message="Are you sure you want to delete this certification? This will also delete all associated questions and exam data."
+          confirmText="Delete Certification"
+          cancelText="Cancel"
+          type="danger"
+        />
       </div>
     </Layout>
   );

@@ -23,6 +23,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import QuestionForm from '../../components/admin/QuestionForm';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { Question } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -37,6 +38,8 @@ const AdminQuestions: React.FC = () => {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [showDebug, setShowDebug] = useState(false);
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchQuestions());
@@ -61,13 +64,18 @@ const AdminQuestions: React.FC = () => {
   };
 
   const handleDeleteQuestion = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this question?')) {
-      try {
-        await dispatch(deleteQuestion(id));
-        toast.success('Question deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete question');
-      }
+    setShowDeleteConfirmation(id);
+  };
+  
+  const confirmDeleteQuestion = async () => {
+    if (!showDeleteConfirmation) return;
+    
+    try {
+      await dispatch(deleteQuestion(showDeleteConfirmation));
+      toast.success('Question deleted successfully');
+      setShowDeleteConfirmation(null);
+    } catch (error) {
+      toast.error('Failed to delete question');
     }
   };
 
@@ -84,6 +92,20 @@ const AdminQuestions: React.FC = () => {
     } catch (error: any) {
       toast.error(error.message || 'Failed to save question');
     }
+  };
+
+  const handleCloseModal = () => {
+    setShowUnsavedChangesModal(true);
+  };
+  
+  const handleConfirmCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingQuestion(null);
+    setShowUnsavedChangesModal(false);
+  };
+  
+  const handleContinueEditing = () => {
+    setShowUnsavedChangesModal(false);
   };
 
   const handleDebugCertification = async (certificationId: string) => {
@@ -469,7 +491,7 @@ const AdminQuestions: React.FC = () => {
         {/* Question Form Modal */}
         <Modal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={handleCloseModal}
           title={editingQuestion ? 'Edit Question' : 'Create Question'}
           size="xl"
         >
@@ -477,7 +499,7 @@ const AdminQuestions: React.FC = () => {
             question={editingQuestion}
             certifications={certifications}
             onSubmit={handleSubmitQuestion}
-            onCancel={() => setIsModalOpen(false)}
+            onCancel={handleCloseModal}
           />
         </Modal>
 
@@ -549,6 +571,30 @@ const AdminQuestions: React.FC = () => {
             </div>
           )}
         </Modal>
+        
+        {/* Unsaved Changes Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showUnsavedChangesModal}
+          onClose={handleContinueEditing}
+          onConfirm={handleConfirmCloseModal}
+          title="Unsaved Changes"
+          message="You have unsaved changes. Are you sure you want to discard them?"
+          confirmText="Discard Changes"
+          cancelText="Continue Editing"
+          type="danger"
+        />
+        
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteConfirmation !== null}
+          onClose={() => setShowDeleteConfirmation(null)}
+          onConfirm={confirmDeleteQuestion}
+          title="Delete Question"
+          message="Are you sure you want to delete this question? This action cannot be undone."
+          confirmText="Delete Question"
+          cancelText="Cancel"
+          type="danger"
+        />
       </div>
     </Layout>
   );
