@@ -23,7 +23,8 @@ import {
   fetchCertifications, 
   createCertificationWithDetails, 
   updateCertificationWithDetails, 
-  deleteCertification 
+  deleteCertification,
+  fetchCertificationWithDetails
 } from '../../store/slices/adminSlice';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
@@ -31,6 +32,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import CertificationDetailsForm, { CertificationFormData } from '../../components/admin/CertificationDetailsForm';
+import CertificationEditModal from '../../components/admin/CertificationEditModal';
 import { Certification } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
@@ -45,6 +47,7 @@ const AdminCertifications: React.FC = () => {
   const [certificationStats, setCertificationStats] = useState<Record<string, any>>({});
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedCertificationDetails, setSelectedCertificationDetails] = useState<any>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCertifications());
@@ -131,7 +134,7 @@ const AdminCertifications: React.FC = () => {
 
   const handleEditCertification = (certification: Certification) => {
     setEditingCertification(certification);
-    setIsModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteCertification = async (id: string) => {
@@ -184,6 +187,21 @@ const AdminCertifications: React.FC = () => {
       setIsModalOpen(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to save certification');
+    }
+  };
+
+  const handleEditSubmit = async (formData: CertificationFormData) => {
+    try {
+      if (editingCertification) {
+        await dispatch(updateCertificationWithDetails({ 
+          id: editingCertification.id, 
+          formData 
+        }));
+        toast.success('Certification updated successfully');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to update certification');
+      throw error;
     }
   };
 
@@ -446,7 +464,7 @@ const AdminCertifications: React.FC = () => {
           </Card>
         )}
 
-        {/* Certification Form Modal */}
+        {/* Certification Form Modal (for new certifications) */}
         <Modal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
@@ -459,6 +477,14 @@ const AdminCertifications: React.FC = () => {
             onCancel={() => setIsModalOpen(false)}
           />
         </Modal>
+
+        {/* Certification Edit Modal (for existing certifications) */}
+        <CertificationEditModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          certification={editingCertification}
+          onSubmit={handleEditSubmit}
+        />
 
         {/* Certification Details Modal */}
         <Modal
@@ -496,54 +522,88 @@ const AdminCertifications: React.FC = () => {
                 </div>
               </div>
 
-              {/* Prerequisites */}
-              {selectedCertificationDetails.prerequisites && (
+              {/* Exam Coverage */}
+              {selectedCertificationDetails.topics && selectedCertificationDetails.topics.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-bold text-primary-white mb-4">Prerequisites</h3>
-                  <div className="space-y-2">
-                    {selectedCertificationDetails.prerequisites.map((prereq: any, index: number) => (
-                      <div key={index} className="flex items-start gap-3 p-3 bg-primary-gray/10 rounded-lg">
-                        <div className="w-2 h-2 bg-primary-orange rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-primary-white font-medium">{prereq.description}</p>
-                          <div className="flex gap-4 mt-1">
-                            {prereq.required && (
-                              <span className="text-xs text-red-400 bg-red-400/20 px-2 py-1 rounded">Required</span>
-                            )}
-                            {prereq.recommended && (
-                              <span className="text-xs text-yellow-400 bg-yellow-400/20 px-2 py-1 rounded">Recommended</span>
-                            )}
+                  <h3 className="text-lg font-bold text-primary-white mb-4">Exam Coverage</h3>
+                  <div className="space-y-4">
+                    {selectedCertificationDetails.topics.map((topic: any, index: number) => (
+                      <div key={index} className="border border-primary-gray/20 rounded-lg p-4 bg-primary-gray/5">
+                        <h4 className="text-primary-white font-medium mb-2">{topic.domain}</h4>
+                        <p className="text-primary-white/80 text-sm mb-2">{topic.description}</p>
+                        
+                        {topic.key_concepts && topic.key_concepts.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-sm text-primary-gray mb-1">Key Concepts:</p>
+                            <div className="flex flex-wrap gap-2">
+                              {topic.key_concepts.map((concept: string, idx: number) => (
+                                <span key={idx} className="bg-primary-orange/10 text-primary-orange px-2 py-1 rounded-full text-xs">
+                                  {concept}
+                                </span>
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
+                        
+                        {topic.depth_of_understanding && (
+                          <div className="mb-2">
+                            <p className="text-sm text-primary-gray mb-1">Depth:</p>
+                            <span className="bg-robotic-blue/10 text-robotic-blue px-2 py-1 rounded text-xs capitalize">
+                              {topic.depth_of_understanding}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Learning Outcomes */}
-              {selectedCertificationDetails.learning_outcomes && (
+              {/* Evaluation Criteria */}
+              {selectedCertificationDetails.evaluation_criteria?.assessment_methods && (
                 <div>
-                  <h3 className="text-lg font-bold text-primary-white mb-4">Learning Outcomes</h3>
-                  <div className="space-y-2">
-                    {selectedCertificationDetails.learning_outcomes.map((outcome: string, index: number) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <CheckCircle size={16} className="text-robotic-green mt-0.5 flex-shrink-0" />
-                        <p className="text-primary-white">{outcome}</p>
+                  <h3 className="text-lg font-bold text-primary-white mb-4">Evaluation Criteria</h3>
+                  <div className="space-y-4">
+                    {selectedCertificationDetails.evaluation_criteria.assessment_methods.map((method: any, index: number) => (
+                      <div key={index} className="border border-primary-gray/20 rounded-lg p-4 bg-primary-gray/5">
+                        <h4 className="text-primary-white font-medium mb-2">{method.coverage_item}</h4>
+                        
+                        {method.scoring_guidelines && (
+                          <div className="mb-2">
+                            <p className="text-sm text-primary-gray mb-1">Scoring Guidelines:</p>
+                            <p className="text-primary-white/80 text-sm">{method.scoring_guidelines}</p>
+                          </div>
+                        )}
+                        
+                        {method.performance_indicators && method.performance_indicators.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-sm text-primary-gray mb-1">Performance Indicators:</p>
+                            <ul className="space-y-1">
+                              {method.performance_indicators.map((indicator: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-2 text-primary-white/80 text-sm">
+                                  <CheckCircle size={12} className="text-robotic-green mt-0.5 flex-shrink-0" />
+                                  {indicator}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Examination Details */}
-              {selectedCertificationDetails.examination_details && (
+              {/* Target Audience */}
+              {selectedCertificationDetails.details_metadata?.target_audience && (
                 <div>
-                  <h3 className="text-lg font-bold text-primary-white mb-4">Examination Details</h3>
-                  <div className="bg-primary-gray/10 rounded-lg p-4">
-                    <pre className="text-primary-white text-sm whitespace-pre-wrap">
-                      {JSON.stringify(selectedCertificationDetails.examination_details, null, 2)}
-                    </pre>
+                  <h3 className="text-lg font-bold text-primary-white mb-4">Target Audience</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCertificationDetails.details_metadata.target_audience.map((audience: string, index: number) => (
+                      <span key={index} className="bg-robotic-purple/10 text-robotic-purple px-3 py-1 rounded-full text-sm">
+                        {audience}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}

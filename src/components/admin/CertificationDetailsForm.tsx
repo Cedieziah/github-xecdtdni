@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Save, X, Plus, Trash2, AlertTriangle, CheckCircle, Info, BookOpen, Target } from 'lucide-react';
 import Button from '../ui/Button';
@@ -7,8 +7,11 @@ import { Certification } from '../../types';
 
 interface CertificationDetailsFormProps {
   certification?: Certification | null;
+  initialFormData?: CertificationFormData;
   onSubmit: (data: CertificationFormData) => void;
   onCancel: () => void;
+  onChange?: (data: CertificationFormData) => void;
+  isSubmitting?: boolean;
 }
 
 export interface CertificationFormData {
@@ -40,52 +43,50 @@ export interface CertificationFormData {
   target_audience: string[];
 }
 
+// Default form data to avoid recreating it on each render
+const defaultFormData: CertificationFormData = {
+  name: '',
+  description: '',
+  provider: '',
+  access_code: '',
+  duration: 60,
+  passing_score: 70,
+  total_questions: 10,
+  is_active: true,
+  exam_coverage: [
+    {
+      coverage_field: '',
+      description: '',
+      key_concepts: [''],
+      depth_of_understanding: '',
+      evaluation_criteria: ''
+    }
+  ],
+  examination_evaluation: [
+    {
+      coverage_item: '',
+      scoring_guidelines: '',
+      performance_indicators: [''],
+      minimum_requirements: '',
+      passing_threshold: ''
+    }
+  ],
+  target_audience: ['']
+};
+
 const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
   certification,
+  initialFormData,
   onSubmit,
-  onCancel
+  onCancel,
+  onChange,
+  isSubmitting = false
 }) => {
-  const [formData, setFormData] = useState<CertificationFormData>({
-    // Main certification fields
-    name: '',
-    description: '',
-    provider: '',
-    access_code: '',
-    duration: 60,
-    passing_score: 70,
-    total_questions: 10,
-    is_active: true,
-    
-    // Certification details fields
-    exam_coverage: [
-      {
-        coverage_field: '',
-        description: '',
-        key_concepts: [''],
-        depth_of_understanding: '',
-        evaluation_criteria: ''
-      }
-    ],
-    examination_evaluation: [
-      {
-        coverage_item: '',
-        scoring_guidelines: '',
-        performance_indicators: [''],
-        minimum_requirements: '',
-        passing_threshold: ''
-      }
-    ],
-    target_audience: ['']
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [activeTab, setActiveTab] = useState<'basic' | 'coverage' | 'evaluation'>('basic');
-
-  useEffect(() => {
-    if (certification) {
-      // Load existing certification data
-      setFormData(prev => ({
-        ...prev,
+  // Use useRef to avoid recreating the initial state on every render
+  const initialFormState = useRef<CertificationFormData>(
+    initialFormData || {
+      ...defaultFormData,
+      ...(certification ? {
         name: certification.name,
         description: certification.description,
         provider: certification.provider,
@@ -94,9 +95,33 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
         passing_score: certification.passing_score,
         total_questions: certification.total_questions,
         is_active: certification.is_active
-      }));
+      } : {})
     }
-  }, [certification]);
+  ).current;
+
+  const [formData, setFormData] = useState<CertificationFormData>(initialFormState);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<'basic' | 'coverage' | 'evaluation'>('basic');
+  const [isFormInitialized, setIsFormInitialized] = useState(!!initialFormData);
+
+  // Initialize form with certification data or initialFormData only once
+  useEffect(() => {
+    if (initialFormData && !isFormInitialized) {
+      setFormData(initialFormData);
+      setIsFormInitialized(true);
+    }
+  }, [initialFormData, isFormInitialized]);
+
+  // Notify parent component of changes, but debounce to prevent too many updates
+  useEffect(() => {
+    if (onChange && isFormInitialized) {
+      const timer = setTimeout(() => {
+        onChange(formData);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [formData, onChange, isFormInitialized]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -270,6 +295,18 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
     { id: 'evaluation', label: 'Evaluation Criteria', icon: Target }
   ];
 
+  // Don't render until we have initial data to prevent flickering
+  if (!isFormInitialized && initialFormData) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-orange/30 border-t-primary-orange rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-primary-white">Preparing form...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <motion.form
       initial={{ opacity: 0, y: 20 }}
@@ -307,6 +344,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="space-y-6"
+          key="basic-tab"
         >
           <h3 className="text-xl font-bold text-primary-white">Basic Information</h3>
           
@@ -427,7 +465,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
             </div>
             <div className="space-y-3">
               {formData.target_audience.map((audience, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={`audience-${index}`} className="flex gap-2">
                   <Input
                     value={audience}
                     onChange={(e) => updateArrayItem('target_audience', index, e.target.value)}
@@ -461,6 +499,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="space-y-6"
+          key="coverage-tab"
         >
           <div>
             <h3 className="text-xl font-bold text-primary-white mb-2">Comprehensive Exam Coverage</h3>
@@ -493,7 +532,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
 
             <div className="space-y-6">
               {formData.exam_coverage.map((coverage, index) => (
-                <div key={index} className="border border-primary-gray/30 rounded-lg p-6 bg-primary-gray/5">
+                <div key={`coverage-${index}`} className="border border-primary-gray/30 rounded-lg p-6 bg-primary-gray/5">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-primary-white">
                       Coverage Item #{index + 1}
@@ -559,7 +598,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
                       </div>
                       <div className="space-y-2">
                         {coverage.key_concepts.map((concept, conceptIndex) => (
-                          <div key={conceptIndex} className="flex gap-2">
+                          <div key={`concept-${index}-${conceptIndex}`} className="flex gap-2">
                             <Input
                               value={concept}
                               onChange={(e) => updateNestedArrayItem('exam_coverage', index, 'key_concepts', conceptIndex, e.target.value)}
@@ -636,6 +675,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="space-y-6"
+          key="evaluation-tab"
         >
           <div>
             <h3 className="text-xl font-bold text-primary-white mb-2">How to Evaluate Examination?</h3>
@@ -668,7 +708,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
 
             <div className="space-y-6">
               {formData.examination_evaluation.map((evaluation, index) => (
-                <div key={index} className="border border-primary-gray/30 rounded-lg p-6 bg-primary-gray/5">
+                <div key={`evaluation-${index}`} className="border border-primary-gray/30 rounded-lg p-6 bg-primary-gray/5">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-primary-white">
                       Evaluation Component #{index + 1}
@@ -734,7 +774,7 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
                       </div>
                       <div className="space-y-2">
                         {evaluation.performance_indicators.map((indicator, indicatorIndex) => (
-                          <div key={indicatorIndex} className="flex gap-2">
+                          <div key={`indicator-${index}-${indicatorIndex}`} className="flex gap-2">
                             <Input
                               value={indicator}
                               onChange={(e) => updateNestedArrayItem('examination_evaluation', index, 'performance_indicators', indicatorIndex, e.target.value)}
@@ -797,11 +837,21 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
 
       {/* Form Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-primary-gray/30">
-        <Button variant="ghost" onClick={onCancel}>
+        <Button 
+          variant="ghost" 
+          onClick={onCancel}
+          disabled={isSubmitting}
+          type="button"
+        >
           <X size={16} />
           Cancel
         </Button>
-        <Button type="submit" variant="primary">
+        <Button 
+          type="submit" 
+          variant="primary"
+          disabled={isSubmitting}
+          loading={isSubmitting}
+        >
           <Save size={16} />
           {certification ? 'Update' : 'Create'} Certification
         </Button>
@@ -810,4 +860,4 @@ const CertificationDetailsForm: React.FC<CertificationDetailsFormProps> = ({
   );
 };
 
-export default CertificationDetailsForm;
+export default memo(CertificationDetailsForm);
