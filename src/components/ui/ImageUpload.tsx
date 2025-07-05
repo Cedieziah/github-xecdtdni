@@ -2,7 +2,15 @@ import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, X, Image as ImageIcon, Loader, AlertTriangle, Check } from 'lucide-react';
 import Button from './Button';
-import { uploadImage, deleteImage, validateImageFile, createPreviewUrl, revokePreviewUrl, IMAGE_CONSTRAINTS } from '../../utils/imageUpload';
+import { 
+  uploadImage, 
+  deleteImage, 
+  validateImageFile, 
+  createPreviewUrl, 
+  revokePreviewUrl, 
+  IMAGE_CONSTRAINTS 
+} from '../../utils/imageUpload';
+import toast from 'react-hot-toast';
 
 interface ImageUploadProps {
   currentImageUrl?: string;
@@ -29,33 +37,42 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setError(null);
     
     // Validate file
-    const validation = await validateImageFile(file);
-    if (!validation.isValid) {
-      setError(validation.error || 'Invalid file');
-      return;
-    }
-
-    // Create preview
-    const preview = createPreviewUrl(file);
-    setPreviewUrl(preview);
-    setIsUploading(true);
-
     try {
-      // Upload image
-      const result = await uploadImage(file, folder);
-      
-      if (result.success && result.url) {
-        onImageUpload(result.url);
-        // Keep preview until component unmounts or new image is selected
-      } else {
-        setError(result.error || 'Upload failed');
+      const validation = await validateImageFile(file);
+      if (!validation.isValid) {
+        setError(validation.error || 'Invalid file');
+        return;
+      }
+
+      // Create preview
+      const preview = createPreviewUrl(file);
+      setPreviewUrl(preview);
+      setIsUploading(true);
+
+      try {
+        // Upload image
+        const result = await uploadImage(file, folder);
+        
+        if (result.success && result.url) {
+          onImageUpload(result.url);
+          // Keep preview until component unmounts or new image is selected
+        } else {
+          setError(result.error || 'Upload failed');
+          revokePreviewUrl(preview);
+          setPreviewUrl(null);
+          toast.error('Image upload failed: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error: any) {
+        console.error('Image upload error:', error);
+        setError(error.message || 'Upload failed');
         revokePreviewUrl(preview);
         setPreviewUrl(null);
+        toast.error('Image upload error: ' + error.message);
       }
-    } catch (error: any) {
-      setError(error.message || 'Upload failed');
-      revokePreviewUrl(preview);
-      setPreviewUrl(null);
+    } catch (validationError: any) {
+      console.error('File validation error:', validationError);
+      setError(validationError.message || 'File validation failed');
+      toast.error('File validation error: ' + validationError.message);
     } finally {
       setIsUploading(false);
     }
@@ -91,7 +108,15 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const handleRemoveImage = async () => {
     if (currentImageUrl) {
       // Try to delete from storage (don't block on failure)
-      await deleteImage(currentImageUrl);
+      try {
+        const deleted = await deleteImage(currentImageUrl);
+        if (!deleted) {
+          console.warn('Failed to delete image from storage, but continuing with removal');
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        // Continue with removal from UI even if storage deletion fails
+      }
     }
     
     if (previewUrl) {

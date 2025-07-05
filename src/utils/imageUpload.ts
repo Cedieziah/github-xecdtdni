@@ -1,5 +1,67 @@
 import { supabase } from '../lib/supabase';
 
+// Function to ensure storage bucket exists
+export const ensureStorageBucket = async (): Promise<boolean> => {
+  try {
+    // First, check if the bucket exists by trying to list files in it
+    try {
+      const { data, error } = await supabase.storage
+        .from('imagemanager')
+        .list('', { limit: 1 });
+      
+      if (!error) {
+        console.log('Storage bucket is available');
+        return true;
+      }
+    } catch (listError) {
+      console.warn('Error checking bucket:', listError);
+      // Continue to try creating the bucket
+    }
+    
+    // Try to create the bucket if it doesn't exist
+    try {
+      const { data, error } = await supabase.storage.createBucket('imagemanager', {
+        public: true,
+        fileSizeLimit: 5 * 1024 * 1024, // 5MB
+        allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
+      });
+      
+      if (error) {
+        if (error.message.includes('already exists')) {
+          console.log('Bucket already exists');
+          return true;
+        }
+        console.error('Error creating bucket:', error);
+        return false;
+      }
+      
+      console.log('Created storage bucket successfully');
+      return true;
+    } catch (createError) {
+      console.error('Error creating bucket:', createError);
+      
+      // If we can't create the bucket, try one more time to check if it exists
+      try {
+        const { data, error } = await supabase.storage
+          .from('imagemanager')
+          .list('', { limit: 1 });
+        
+        if (!error) {
+          console.log('Storage bucket is available after all');
+          return true;
+        }
+      } catch (finalCheckError) {
+        // Ignore this error
+      }
+      
+      return false;
+    }
+  } catch (error) {
+    console.error('Error checking bucket availability:', error);
+    return false;
+  }
+};
+
 export interface ImageUploadResult {
   success: boolean;
   url?: string;
@@ -108,9 +170,19 @@ export const uploadImage = async (
   folder: 'questions' | 'options' = 'questions'
 ): Promise<ImageUploadResult> => {
   try {
+    // Ensure the bucket exists
+    const bucketReady = await ensureStorageBucket();
+    if (!bucketReady) {
+      return {
+        success: false,
+        error: 'Storage bucket is not available'
+      };
+    }
+
     // Validate the image first
     const validation = await validateImageFile(file);
     if (!validation.isValid) {
+      console.error('Image validation failed:', validation.error);
       return {
         success: false,
         error: validation.error
@@ -122,12 +194,24 @@ export const uploadImage = async (
     const filePath = `${folder}/${filename}`;
 
     // Upload to Supabase storage
-    const { data, error } = await supabase.storage
-      .from('imagemanager')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+    let data, error;
+    try {
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('imagemanager')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true // Use upsert to avoid conflicts
+        });
+      
+      data = uploadData;
+      error = uploadError;
+    } catch (uploadError) {
+      console.error('Upload caught error:', uploadError);
+      return {
+        success: false,
+        error: `Upload failed: ${uploadError.message || 'Unknown error'}`
+      };
+    }
 
     if (error) {
       console.error('Upload error:', error);
@@ -162,30 +246,57 @@ export const uploadImage = async (
 export const deleteImage = async (imageUrl: string): Promise<boolean> => {
   try {
     // Extract the file path from the URL
-    const url = new URL(imageUrl);
-    const pathParts = url.pathname.split('/');
-    const bucketIndex = pathParts.findIndex(part => part === 'imagemanager');
+    if (!imageUrl) {
+      console.error('No image URL provided');
+      return false;
+    }
     
-    if (bucketIndex === -1) {
-      console.error('Invalid image URL format');
+    // Parse the URL to extract the path
+    let filePath;
+    try {
+      const url = new URL(imageUrl);
+      const pathParts = url.pathname.split('/');
+      const bucketIndex = pathParts.findIndex(part => part === 'imagemanager');
+      
+      if (bucketIndex === -1) {
+        console.error('Invalid image URL format');
+        return false;
+      }
+
+      filePath = pathParts.slice(bucketIndex + 1).join('/');
+    } catch (parseError) {
+      console.error('Error parsing image URL:', parseError);
       return false;
     }
 
-    const filePath = pathParts.slice(bucketIndex + 1).join('/');
+    // Ensure the bucket exists before attempting to delete
+    const bucketReady = await ensureStorageBucket();
+    if (!bucketReady) {
+      console.warn('Storage bucket is not available, but continuing with UI removal');
+      return true; // Return true to allow UI removal even if storage deletion fails
+    }
 
-    const { error } = await supabase.storage
-      .from('imagemanager')
-      .remove([filePath]);
+    let error;
+    try {
+      const { error: deleteError } = await supabase.storage
+        .from('imagemanager')
+        .remove([filePath]);
+      
+      error = deleteError;
+    } catch (deleteError) {
+      console.error('Delete caught error:', deleteError);
+      return true; // Return true to allow UI removal even if storage deletion fails
+    }
 
     if (error) {
       console.error('Delete error:', error);
-      return false;
+      return true; // Return true to allow UI removal even if storage deletion fails
     }
 
     return true;
   } catch (error) {
     console.error('Image deletion error:', error);
-    return false;
+    return true; // Return true to allow UI removal even if storage deletion fails
   }
 };
 

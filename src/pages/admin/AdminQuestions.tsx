@@ -27,6 +27,7 @@ import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { Question } from '../../types';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { ensureStorageBucket } from '../../utils/imageUpload';
 
 const AdminQuestions: React.FC = () => {
   const dispatch = useDispatch();
@@ -44,6 +45,17 @@ const AdminQuestions: React.FC = () => {
   useEffect(() => {
     dispatch(fetchQuestions());
     dispatch(fetchCertifications());
+    
+    // Ensure storage bucket is set up
+    const setupStorage = async () => {
+      try {
+        await ensureStorageBucket();
+      } catch (error) {
+        console.error('Error setting up storage:', error);
+      }
+    };
+    
+    setupStorage();
   }, [dispatch]);
 
   const filteredQuestions = questions.filter(question => {

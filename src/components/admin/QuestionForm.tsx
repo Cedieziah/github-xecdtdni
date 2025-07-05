@@ -4,8 +4,10 @@ import { Save, X, Plus, Trash2, Image as ImageIcon } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import ImageUpload from '../ui/ImageUpload';
+import { ensureStorageBucket } from '../../utils/imageUpload';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { Question, Certification, AnswerOption } from '../../types';
+import toast from 'react-hot-toast';
 
 interface QuestionFormProps {
   question?: Question | null;
@@ -41,6 +43,23 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   
   // Store original form data for comparison
+  
+  // Ensure storage bucket is set up when component mounts
+  useEffect(() => {
+    const setupStorage = async () => {
+      try {
+        const bucketReady = await ensureStorageBucket();
+        if (!bucketReady) {
+          toast.error('Storage setup failed. Image uploads may not work.');
+        }
+      } catch (error) {
+        console.error('Error setting up storage:', error);
+      }
+    };
+    
+    setupStorage();
+  }, []);
+  
   const originalFormData = useRef({
     formData: { ...formData },
     answerOptions: [...answerOptions]
