@@ -194,7 +194,14 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
       return;
     }
 
-    const validOptions = answerOptions.filter(opt => opt.option_text && opt.option_text.trim());
+    // Ensure we preserve image URLs when filtering valid options
+    const validOptions = answerOptions
+      .filter(opt => opt.option_text && opt.option_text.trim())
+      .map(opt => ({
+        ...opt,
+        option_text: opt.option_text.trim(),
+        option_image_url: opt.option_image_url || null
+      }));
 
     onSubmit({
       ...formData,
@@ -265,7 +272,12 @@ const QuestionForm: React.FC<QuestionFormProps> = ({
 
   const handleOptionImageUpload = (index: number, imageUrl: string | null) => {
     setAnswerOptions(prev => prev.map((opt, i) => 
-      i === index ? { ...opt, option_image_url: imageUrl } : opt
+      i === index ? { 
+        ...opt, 
+        option_image_url: imageUrl,
+        // Ensure this change is detected for existing options
+        ...(opt.id ? { id: opt.id } : {})
+      } : opt
     ));
     
     // Check for changes

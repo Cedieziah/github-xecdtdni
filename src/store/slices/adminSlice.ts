@@ -437,6 +437,7 @@ export const createQuestion = createAsyncThunk(
       .from('questions')
       .insert({
         ...questionFields,
+        question_image_url: questionFields.question_image_url || null,
         created_by: user?.id,
         is_active: questionFields.is_active !== false // Default to true
       })
@@ -451,7 +452,8 @@ export const createQuestion = createAsyncThunk(
       .map(option => ({
         question_id: question.id,
         option_text: option.option_text.trim(),
-        is_correct: option.is_correct || false
+        is_correct: option.is_correct || false,
+        option_image_url: option.option_image_url || null
       }));
 
     if (optionsToInsert.length < 2) {
@@ -509,10 +511,15 @@ export const updateQuestion = createAsyncThunk(
     // Update answer options if provided
     if (answer_options) {
       // Delete existing options
-      await supabase
+      const { error: deleteError } = await supabase
         .from('answer_options')
         .delete()
         .eq('question_id', id);
+      
+      if (deleteError) {
+        console.error('Error deleting existing answer options:', deleteError);
+        throw deleteError;
+      }
 
       // Insert new options
       const validOptions = answer_options.filter(opt => opt.option_text && opt.option_text.trim());
@@ -520,7 +527,8 @@ export const updateQuestion = createAsyncThunk(
         const optionsToInsert = validOptions.map(option => ({
           question_id: id,
           option_text: option.option_text.trim(),
-          is_correct: option.is_correct || false
+          is_correct: option.is_correct || false,
+          option_image_url: option.option_image_url || null
         }));
 
         const { data: options, error: optionsError } = await supabase

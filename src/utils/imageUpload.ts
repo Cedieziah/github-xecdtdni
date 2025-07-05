@@ -192,6 +192,8 @@ export const uploadImage = async (
     // Generate unique filename
     const filename = generateUniqueFilename(file.name);
     const filePath = `${folder}/${filename}`;
+    
+    console.log(`Uploading image to ${folder}/${filename}`);
 
     // Upload to Supabase storage
     let data, error;
@@ -214,7 +216,7 @@ export const uploadImage = async (
     }
 
     if (error) {
-      console.error('Upload error:', error);
+      console.error(`Upload error for ${filePath}:`, error);
       return {
         success: false,
         error: `Upload failed: ${error.message}`
@@ -225,6 +227,8 @@ export const uploadImage = async (
     const { data: urlData } = supabase.storage
       .from('imagemanager')
       .getPublicUrl(filePath);
+      
+    console.log('Generated public URL:', urlData.publicUrl);
 
     return {
       success: true,
@@ -250,6 +254,8 @@ export const deleteImage = async (imageUrl: string): Promise<boolean> => {
       console.error('No image URL provided');
       return false;
     }
+    
+    console.log('Attempting to delete image:', imageUrl);
     
     // Parse the URL to extract the path
     let filePath;
@@ -281,6 +287,8 @@ export const deleteImage = async (imageUrl: string): Promise<boolean> => {
       const { error: deleteError } = await supabase.storage
         .from('imagemanager')
         .remove([filePath]);
+        
+      console.log('Delete operation completed for:', filePath);
       
       error = deleteError;
     } catch (deleteError) {

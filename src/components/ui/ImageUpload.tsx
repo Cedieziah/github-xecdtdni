@@ -36,6 +36,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   const handleFileSelect = async (file: File) => {
     setError(null);
     
+    // Clear any previous error
+    setError(null);
+    
     // Validate file
     try {
       const validation = await validateImageFile(file);
@@ -56,6 +59,7 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
         if (result.success && result.url) {
           onImageUpload(result.url);
           // Keep preview until component unmounts or new image is selected
+          console.log('Image uploaded successfully:', result.url);
         } else {
           setError(result.error || 'Upload failed');
           revokePreviewUrl(preview);
@@ -293,6 +297,8 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
       )}
     </div>
   );
+  
+  console.log('Image removed from UI');
 };
 
 export default ImageUpload;
