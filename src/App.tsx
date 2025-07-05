@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { store } from './store';
 import { useAuth } from './hooks/useAuth';
 import { RootState } from './store';
+import ThemeProvider from './components/theme/ThemeProvider';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import AuthConfirm from './components/auth/AuthConfirm';
@@ -80,32 +81,34 @@ const AppRoutes: React.FC = () => {
 function App() {
   return (
     <Provider store={store}>
-      <div className="min-h-screen bg-primary-dark font-robotic">
-        <AppRoutes />
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#121212',
-              color: '#F5F5F5',
-              border: '1px solid #4A4A4A',
-            },
-            success: {
-              iconTheme: {
-                primary: '#10B981',
-                secondary: '#F5F5F5',
+      <ThemeProvider>
+        <div className="min-h-screen bg-primary-dark font-robotic">
+          <AppRoutes />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#121212',
+                color: '#F5F5F5',
+                border: '1px solid #4A4A4A',
               },
-            },
-            error: {
-              iconTheme: {
-                primary: '#EF4444',
-                secondary: '#F5F5F5',
+              success: {
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: '#F5F5F5',
+                },
               },
-            },
-          }}
-        />
-      </div>
+              error: {
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: '#F5F5F5',
+                },
+              },
+            }}
+          />
+        </div>
+      </ThemeProvider>
     </Provider>
   );
 }

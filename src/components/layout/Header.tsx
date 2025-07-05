@@ -6,6 +6,9 @@ import { RootState } from '../../store';
 import { toggleSidebar } from '../../store/slices/uiSlice';
 import Button from '../ui/Button';
 
+import ThemeToggle from '../theme/ThemeToggle';
+import FontSizeControl from '../theme/FontSizeControl';
+
 const Header: React.FC = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -26,6 +29,10 @@ const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle size="sm" />
+          <FontSizeControl compact />
+        </div>
         <div className="flex items-center gap-3 px-4 py-2 bg-primary-gray/20 rounded-lg">
           <div className="w-8 h-8 bg-primary-orange rounded-full flex items-center justify-center">
             <User size={16} className="text-white" />

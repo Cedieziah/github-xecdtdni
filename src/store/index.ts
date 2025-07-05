@@ -3,6 +3,7 @@ import authSlice from './slices/authSlice';
 import examSlice from './slices/examSlice';
 import adminSlice from './slices/adminSlice';
 import uiSlice from './slices/uiSlice';
+import themeSlice from './slices/themeSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
     exam: examSlice,
     admin: adminSlice,
     ui: uiSlice,
+    theme: themeSlice,
   },
 });
 

@@ -3,21 +3,24 @@ import { motion } from 'framer-motion';
 import { 
   Settings, 
   Save, 
-  Bell, 
   Shield, 
   Mail,
   Database,
-  Palette,
   Globe,
   Lock,
   Users,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Palette,
+  Sun,
+  Moon,
+  Type
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import ThemeSettings from '../../components/theme/ThemeSettings';
 import toast from 'react-hot-toast';
 
 const AdminSettings: React.FC = () => {
@@ -52,7 +55,7 @@ const AdminSettings: React.FC = () => {
     requireDigitalSignature: true
   });
 
-  const [activeTab, setActiveTab] = useState<'platform' | 'security' | 'email' | 'exam' | 'certificate'>('platform');
+  const [activeTab, setActiveTab] = useState<'platform' | 'security' | 'email' | 'exam' | 'certificate' | 'theme'>('platform');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -153,8 +156,9 @@ const AdminSettings: React.FC = () => {
     { id: 'platform', label: 'Platform', icon: Globe },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'email', label: 'Email', icon: Mail },
-    { id: 'exam', label: 'Exam', icon: Settings },
-    { id: 'certificate', label: 'Certificate', icon: Database }
+    { id: 'exam', label: 'Exam', icon: FileText },
+    { id: 'certificate', label: 'Certificate', icon: Award },
+    { id: 'theme', label: 'Theme', icon: Palette }
   ];
 
   return (
@@ -446,6 +450,17 @@ const AdminSettings: React.FC = () => {
                   </div>
                 </motion.div>
               )}
+
+              {activeTab === 'theme' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-6"
+                >
+                  <ThemeSettings />
+                </motion.div>
+              )}
+
             </Card>
           </div>
         </div>
