@@ -1,17 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Users, 
-  Award, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
-  Bell,
-  Calendar,
-  FileText
-} from 'lucide-react';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
+import { Users, Award, CheckCircle, XCircle } from 'lucide-react';
 
 interface ThemePreviewProps {
   mode: 'dark' | 'light';
@@ -29,8 +18,8 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ mode, fontSize }) => {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={`rounded-lg overflow-hidden ${
-        mode === 'light' ? 'bg-white' : 'bg-primary-black'
+      className={`rounded-lg overflow-hidden border ${
+        mode === 'light' ? 'bg-white border border-gray-200' : 'bg-primary-black border border-primary-gray/30'
       }`}
     >
       {/* Header */}
@@ -50,9 +39,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ mode, fontSize }) => {
       <div className="p-4">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className={`p-3 rounded-lg ${
+          <div className={`p-3 rounded-lg border shadow-sm ${
             mode === 'light' 
-              ? 'bg-gray-50 border border-gray-200' 
+              ? 'bg-gray-50 border-gray-200' 
               : 'bg-primary-gray/10 border border-primary-gray/30'
           }`}>
             <div className="flex items-center gap-2">
@@ -78,9 +67,9 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ mode, fontSize }) => {
             </div>
           </div>
 
-          <div className={`p-3 rounded-lg ${
+          <div className={`p-3 rounded-lg border shadow-sm ${
             mode === 'light' 
-              ? 'bg-gray-50 border border-gray-200' 
+              ? 'bg-gray-50 border-gray-200' 
               : 'bg-primary-gray/10 border border-primary-gray/30'
           }`}>
             <div className="flex items-center gap-2">
@@ -108,10 +97,10 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ mode, fontSize }) => {
         </div>
 
         {/* Sample Table */}
-        <div className={`rounded-lg overflow-hidden border ${
+        <div className={`rounded-lg overflow-hidden border shadow-sm ${
           mode === 'light' ? 'border-gray-200' : 'border-primary-gray/30'
         } mb-4`}>
-          <table className="w-full">
+          <table className="w-full border-collapse">
             <thead className={
               mode === 'light' ? 'bg-gray-50' : 'bg-primary-gray/10'
             }>
@@ -175,7 +164,7 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ mode, fontSize }) => {
         <div className="mb-4">
           <label className={`block text-sm font-medium mb-1 ${
             mode === 'light' ? 'text-gray-700' : 'text-primary-white'
-          }`} style={{ fontSize: getFontSize(14) }}>
+          }`} style={{ fontSize: getFontSize(14), fontWeight: 500 }}>
             Sample Input
           </label>
           <input
@@ -193,16 +182,16 @@ const ThemePreview: React.FC<ThemePreviewProps> = ({ mode, fontSize }) => {
         </div>
 
         {/* Sample Buttons */}
-        <div className="flex gap-2">
-          <button className={`px-3 py-1.5 rounded-lg font-medium text-white ${
-            mode === 'light' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-primary-orange hover:bg-orange-600'
+        <div className="flex gap-3">
+          <button className={`px-4 py-2 rounded-lg font-medium ${
+            mode === 'light' ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'bg-primary-orange hover:bg-orange-600 text-white'
           }`} style={{ fontSize: getFontSize(14) }}>
             Primary
           </button>
-          <button className={`px-3 py-1.5 rounded-lg font-medium ${
+          <button className={`px-4 py-2 rounded-lg font-medium border shadow-sm ${
             mode === 'light' 
-              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-              : 'bg-primary-gray/20 text-primary-white hover:bg-primary-gray/30'
+              ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50' 
+              : 'bg-primary-gray/20 border-primary-gray/30 text-primary-white hover:bg-primary-gray/30'
           }`} style={{ fontSize: getFontSize(14) }}>
             Secondary
           </button>

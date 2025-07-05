@@ -25,6 +25,7 @@ const Sidebar: React.FC = () => {
   const dispatch = useDispatch();
   const { sidebarOpen } = useSelector((state: RootState) => state.ui);
   const { user } = useSelector((state: RootState) => state.auth);
+  const { mode } = useSelector((state: RootState) => state.theme);
   const location = useLocation();
 
   const adminNavItems = [
@@ -74,11 +75,17 @@ const Sidebar: React.FC = () => {
         width: sidebarOpen ? 280 : 80,
         transition: { duration: 0.3, ease: 'easeInOut' }
       }}
-      className="fixed left-0 top-0 h-full bg-primary-dark border-r border-primary-gray/30 z-40"
+      className={`fixed left-0 top-0 h-full border-r z-40 ${
+        mode === 'light' 
+          ? 'bg-gray-50 border-gray-200' 
+          : 'bg-primary-dark border-primary-gray/30'
+      }`}
     >
       <div className="flex flex-col h-full">
         {/* Logo and Menu Button */}
-        <div className="p-6 border-b border-primary-gray/30">
+        <div className={`p-6 border-b ${
+          mode === 'light' ? 'border-gray-200' : 'border-primary-gray/30'
+        }`}>
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
@@ -99,7 +106,9 @@ const Sidebar: React.FC = () => {
                 <div className="w-8 h-8 bg-primary-orange rounded-lg flex items-center justify-center">
                   <Shield size={20} className="text-white" />
                 </div>
-                <span className="text-xl font-bold text-primary-white">
+                <span className={`text-xl font-bold ${
+                  mode === 'light' ? 'text-gray-900' : 'text-primary-white'
+                }`}>
                   {platformName}
                 </span>
               </motion.div>
@@ -108,7 +117,9 @@ const Sidebar: React.FC = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-6">
+        <nav className={`flex-1 py-6 ${
+          mode === 'light' ? 'text-gray-700' : ''
+        }`}>
           <ul className="space-y-2 px-4">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -121,8 +132,10 @@ const Sidebar: React.FC = () => {
                     className={`
                       flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200
                       ${isActive 
-                        ? 'bg-primary-orange text-white shadow-lg' 
-                        : 'text-primary-white/70 hover:text-white hover:bg-primary-gray/20'
+                        ? 'bg-primary-orange text-white shadow-lg'
+                        : mode === 'light'
+                          ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                          : 'text-primary-white/70 hover:text-white hover:bg-primary-gray/20'
                       }
                     `}
                   >
@@ -144,10 +157,16 @@ const Sidebar: React.FC = () => {
         </nav>
 
         {/* User section */}
-        <div className="p-4 border-t border-primary-gray/30">
+        <div className={`p-4 border-t ${
+          mode === 'light' ? 'border-gray-200' : 'border-primary-gray/30'
+        }`}>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-all duration-200"
+            className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg transition-all duration-200 ${
+              mode === 'light' 
+                ? 'text-red-600 hover:text-red-700 hover:bg-red-50' 
+                : 'text-red-400 hover:text-red-300 hover:bg-red-500/10'
+            }`}
           >
             <LogOut size={20} />
             {sidebarOpen && (

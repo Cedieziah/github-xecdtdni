@@ -5,13 +5,13 @@
 /* Theme variables */
 :root {
   /* Dark mode colors (default) */
-  --color-bg-primary: #0A192F;
-  --color-bg-secondary: #121212;
-  --color-text-primary: #F5F5F5;
-  --color-text-secondary: #4A4A4A;
+  --color-bg-primary: #0A192F !important;
+  --color-bg-secondary: #121212 !important;
+  --color-text-primary: #F5F5F5 !important;
+  --color-text-secondary: #9CA3AF !important;
   --color-accent: #FF4F00;
   --color-border: rgba(74, 74, 74, 0.3);
-  --color-card-bg: #121212;
+  --color-card-bg: #121212 !important;
   --color-success: #10B981;
   --color-error: #EF4444;
   --color-warning: #F59E0B;
@@ -20,45 +20,87 @@
 
 /* Light mode colors */
 .light-mode {
-  --color-bg-primary: #F5F5F5;
-  --color-bg-secondary: #FFFFFF;
-  --color-text-primary: #121212;
-  --color-text-secondary: #4A4A4A;
-  --color-accent: #FF4F00;
-  --color-border: rgba(74, 74, 74, 0.2);
-  --color-card-bg: #FFFFFF;
-  --color-success: #059669;
-  --color-error: #DC2626;
-  --color-warning: #D97706;
-  --color-info: #0284C7;
+  --color-bg-primary: #F5F5F5 !important;
+  --color-bg-secondary: #FFFFFF !important; 
+  --color-text-primary: #121212 !important;
+  --color-text-secondary: #4B5563 !important;
+  --color-accent: #FF4F00 !important;
+  --color-border: rgba(209, 213, 219, 0.5) !important;
+  --color-card-bg: #FFFFFF !important;
+  --color-success: #059669 !important;
+  --color-error: #DC2626 !important;
+  --color-warning: #D97706 !important;
+  --color-info: #0284C7 !important;
 }
 
 /* Apply theme variables */
 body {
-  background-color: var(--color-bg-primary);
-  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Override Tailwind classes with CSS variables */
 .bg-primary-dark {
-  background-color: var(--color-bg-primary);
+  background-color: var(--color-bg-primary) !important;
 }
 
 .bg-primary-black {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg-secondary) !important;
 }
 
 .text-primary-white {
-  color: var(--color-text-primary);
+  color: var(--color-text-primary) !important;
 }
 
 .text-primary-gray {
-  color: var(--color-text-secondary);
+  color: var(--color-text-secondary) !important;
 }
 
 .border-primary-gray\/30 {
-  border-color: var(--color-border);
+  border-color: var(--color-border) !important;
+}
+
+/* Card background in light mode */
+.light-mode .bg-primary-black\/50,
+.light-mode .bg-primary-black,
+.light-mode .bg-primary-gray\/10,
+.light-mode .bg-primary-gray\/20 {
+  background-color: var(--color-card-bg) !important;
+}
+
+/* Fix border colors in light mode */
+.light-mode .border-primary-gray\/30 {
+  border-color: rgba(209, 213, 219, 0.5) !important;
+}
+
+/* Fix gradient background in light mode */
+.light-mode .bg-gradient-to-br.from-primary-dark.via-primary-black.to-primary-dark {
+  background: var(--color-bg-primary) !important;
+}
+
+/* Fix sidebar in light mode */
+.light-mode aside.bg-primary-dark {
+  background-color: #F8FAFC !important;
+  border-right-color: rgba(209, 213, 219, 0.5) !important;
+}
+
+/* Fix navigation items in light mode */
+.light-mode nav .text-primary-white\/70 {
+  color: #4B5563 !important;
+}
+
+.light-mode nav .hover\:text-white:hover {
+  color: #121212 !important;
+}
+
+.light-mode nav .hover\:bg-primary-gray\/20:hover {
+  background-color: rgba(243, 244, 246, 0.8) !important;
+}
+
+/* Fix buttons in light mode */
+.light-mode .bg-primary-orange {
+  color: white !important;
 }
 
 /* Custom slider styles */
@@ -107,4 +149,15 @@ body {
 
 .text-size-large {
   font-size: 1.25rem;
+}
+
+/* Fix table styles in light mode */
+.light-mode table th,
+.light-mode table td {
+  border-color: rgba(209, 213, 219, 0.5) !important;
+}
+
+/* Fix card hover in light mode */
+.light-mode .hover\:border-primary-orange\/50:hover {
+  border-color: rgba(255, 79, 0, 0.5) !important;
 }

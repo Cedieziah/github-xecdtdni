@@ -14,7 +14,9 @@ import {
   Palette,
   Sun,
   Moon,
-  Type
+  Type,
+  FileText,
+  Award
 } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';

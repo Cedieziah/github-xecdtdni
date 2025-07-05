@@ -20,7 +20,7 @@ import {
 import Card from '../ui/Card';
 import Button from '../ui/Button';
 import ThemePreview from './ThemePreview';
-import useTheme from '../../hooks/useTheme';
+import useTheme from '../../hooks/useTheme'; 
 import toast from 'react-hot-toast';
 
 const ThemeSettings: React.FC = () => {
@@ -28,7 +28,7 @@ const ThemeSettings: React.FC = () => {
   const { mode, fontSize } = useSelector((state: RootState) => state.theme);
   const [previewMode, setPreviewMode] = useState<ThemeMode | null>(null);
   const [previewFontSize, setPreviewFontSize] = useState<FontSize | null>(null);
-  const { updateGlobalThemeSettings } = useTheme();
+  const { updateGlobalThemeSettings } = useTheme(); 
 
   const handleThemeChange = (newMode: ThemeMode) => {
     setPreviewMode(newMode);
@@ -85,10 +85,10 @@ const ThemeSettings: React.FC = () => {
       <p className="text-primary-gray">
         Customize the appearance of the platform for all users
       </p>
-
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Theme Mode Selection */}
-        <Card>
+        <Card className={`${mode === 'light' ? 'border-gray-200 shadow-sm' : ''}`}>
           <h4 className="text-lg font-semibold text-primary-white mb-4">
             Color Theme
           </h4>
@@ -97,8 +97,10 @@ const ThemeSettings: React.FC = () => {
               onClick={() => handleThemeChange('light')}
               className={`flex-1 p-4 rounded-lg border-2 transition-all ${
                 displayMode === 'light'
-                  ? 'border-primary-orange bg-primary-orange/10'
-                  : 'border-primary-gray/30 hover:border-primary-orange/50'
+                  ? 'border-primary-orange bg-primary-orange/10 shadow-sm'
+                  : mode === 'light' 
+                    ? 'border-gray-300 hover:border-primary-orange/50 shadow-sm' 
+                    : 'border-primary-gray/30 hover:border-primary-orange/50'
               }`}
             >
               <div className="flex flex-col items-center gap-3">
@@ -117,8 +119,10 @@ const ThemeSettings: React.FC = () => {
               onClick={() => handleThemeChange('dark')}
               className={`flex-1 p-4 rounded-lg border-2 transition-all ${
                 displayMode === 'dark'
-                  ? 'border-primary-orange bg-primary-orange/10'
-                  : 'border-primary-gray/30 hover:border-primary-orange/50'
+                  ? 'border-primary-orange bg-primary-orange/10 shadow-sm'
+                  : mode === 'light' 
+                    ? 'border-gray-300 hover:border-primary-orange/50 shadow-sm' 
+                    : 'border-primary-gray/30 hover:border-primary-orange/50'
               }`}
             >
               <div className="flex flex-col items-center gap-3">
@@ -136,7 +140,7 @@ const ThemeSettings: React.FC = () => {
         </Card>
 
         {/* Font Size Selection */}
-        <Card>
+        <Card className={`${mode === 'light' ? 'border-gray-200 shadow-sm' : ''}`}>
           <h4 className="text-lg font-semibold text-primary-white mb-4">
             Font Size
           </h4>
@@ -151,8 +155,10 @@ const ThemeSettings: React.FC = () => {
                 onClick={() => handleFontSizeChange(size.id as FontSize)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
                   displayFontSize === size.id
-                    ? 'border-primary-orange bg-primary-orange/10'
-                    : 'border-primary-gray/30 hover:border-primary-orange/50'
+                    ? 'border-primary-orange bg-primary-orange/10 shadow-sm'
+                    : mode === 'light' 
+                      ? 'border-gray-300 hover:border-primary-orange/50 shadow-sm' 
+                      : 'border-primary-gray/30 hover:border-primary-orange/50'
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -185,7 +191,7 @@ const ThemeSettings: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <Card className="bg-primary-orange/10 border-primary-orange/30">
+          <Card className={`bg-primary-orange/10 ${mode === 'light' ? 'border-primary-orange/30 shadow-sm' : 'border-primary-orange/30'}`}>
             <div className="flex items-center justify-between mb-4">
               <h4 className="text-lg font-semibold text-primary-white flex items-center gap-2">
                 <Eye size={20} className="text-primary-orange" />
@@ -199,7 +205,7 @@ const ThemeSettings: React.FC = () => {
             <div className={`p-4 rounded-lg ${
               displayMode === 'light' 
                 ? 'bg-white text-gray-800' 
-                : 'bg-primary-black text-primary-white'
+                : 'bg-primary-black text-primary-white border border-primary-gray/30'
             }`}>
               <h5 className={`text-lg font-semibold mb-2 ${
                 displayMode === 'light' ? 'text-gray-900' : 'text-primary-white'
@@ -235,7 +241,7 @@ const ThemeSettings: React.FC = () => {
           </Card>
         </motion.div>
       ) : (
-        <Card>
+        <Card className={`${mode === 'light' ? 'border-gray-200 shadow-sm' : ''}`}>
           <h4 className="text-lg font-semibold text-primary-white mb-4">Current Theme Preview</h4>
           <ThemePreview mode={mode} fontSize={fontSize} />
         </Card>
