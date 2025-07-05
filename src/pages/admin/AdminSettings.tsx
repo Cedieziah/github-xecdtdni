@@ -1,26 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Settings, 
-  Save, 
-  Shield, 
-  Mail,
-  Database,
-  Globe,
-  Lock,
-  Users,
-  CheckCircle,
-  AlertTriangle,
-  Palette,
-  Sun,
-  Moon,
-  Type,
-  FileText,
-  Award
-} from 'lucide-react';
+import { Settings, Save, Shield, Mail, Database, Globe, Lock, Users, CheckCircle, AlertTriangle, Palette, Moon, Sun, Type, FileText, Award } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
+import ThemeToggle from '../../components/theme/ThemeToggle';
+import FontSizeControl from '../../components/theme/FontSizeControl';
 import Input from '../../components/ui/Input';
 import ThemeSettings from '../../components/theme/ThemeSettings';
 import toast from 'react-hot-toast';
@@ -60,7 +45,8 @@ const AdminSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'platform' | 'security' | 'email' | 'exam' | 'certificate' | 'theme'>('platform');
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); 
+  const { mode } = useSelector((state: RootState) => state.theme);
 
   // Load settings from localStorage on component mount
   useEffect(() => {
@@ -452,6 +438,24 @@ const AdminSettings: React.FC = () => {
                   </div>
                 </motion.div>
               )}
+
+              {/* Quick Actions */}
+              <div className="border-t border-primary-gray/30 pt-4 mt-6">
+                <h3 className="text-lg font-semibold text-primary-white mb-4">Quick Theme Controls</h3>
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-primary-gray/10 rounded-lg">
+                    <Palette size={18} className="text-primary-orange" />
+                    <span className="text-sm text-primary-white">Theme:</span>
+                    <ThemeToggle size="sm" />
+                  </div>
+                  
+                  <div className="flex items-center gap-3 p-3 bg-primary-gray/10 rounded-lg">
+                    <Type size={18} className="text-robotic-blue" />
+                    <span className="text-sm text-primary-white">Font Size:</span>
+                    <FontSizeControl compact />
+                  </div>
+                </div>
+              </div>
 
               {activeTab === 'theme' && (
                 <motion.div

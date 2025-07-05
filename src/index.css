@@ -77,6 +77,41 @@ body {
 /* Fix gradient background in light mode */
 .light-mode .bg-gradient-to-br.from-primary-dark.via-primary-black.to-primary-dark {
   background: var(--color-bg-primary) !important;
+  position: relative;
+}
+
+/* Fix background elements in light mode */
+.light-mode .absolute.inset-0.overflow-hidden div {
+  opacity: 0.6 !important;
+}
+
+.light-mode .absolute.top-1\/4.left-1\/4.w-64.h-64.bg-primary-orange\/5 {
+  background-color: rgba(255, 79, 0, 0.3) !important;
+}
+
+.light-mode .absolute.bottom-1\/4.right-1\/4.w-96.h-96.bg-robotic-blue\/5 {
+  background-color: rgba(0, 212, 255, 0.3) !important;
+}
+
+/* Fix background elements in light mode - updated selectors */
+.light-mode .absolute.top-1\/4.left-1\/4.w-32.lg\:w-64.h-32.lg\:h-64 {
+  background-color: rgba(255, 79, 0, 0.3) !important;
+  opacity: 0.9 !important;
+}
+
+.light-mode .absolute.bottom-1\/4.right-1\/4.w-48.lg\:w-96.h-48.lg\:h-96 {
+  background-color: rgba(0, 212, 255, 0.3) !important;
+  opacity: 0.9 !important;
+}
+
+.light-mode header.bg-primary-black\/80 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  border-bottom-color: rgba(209, 213, 219, 0.5) !important;
+}
+
+/* Fix user profile section in header */
+.light-mode .bg-primary-gray\/20 {
+  background-color: rgba(243, 244, 246, 0.5) !important;
 }
 
 /* Fix sidebar in light mode */
@@ -100,6 +135,23 @@ body {
 
 /* Fix buttons in light mode */
 .light-mode .bg-primary-orange {
+  color: white !important;
+}
+
+/* Fix button text in light mode */
+.light-mode button.bg-primary-gray {
+  background-color: #4B5563 !important;
+  color: white !important;
+}
+
+.light-mode button.bg-primary-gray:hover {
+  background-color: #374151 !important;
+}
+
+/* Fix secondary button styles in light mode */
+.light-mode button.bg-secondary,
+.light-mode .bg-secondary {
+  background-color: #4B5563 !important;
   color: white !important;
 }
 
@@ -160,4 +212,31 @@ body {
 /* Fix card hover in light mode */
 .light-mode .hover\:border-primary-orange\/50:hover {
   border-color: rgba(255, 79, 0, 0.5) !important;
+}
+
+/* Fix footer in light mode */
+.light-mode footer.bg-primary-black {
+  background-color: #F8FAFC !important;
+  border-top-color: rgba(209, 213, 219, 0.5) !important;
+}
+
+.light-mode footer .text-primary-white {
+  color: #111827 !important;
+}
+
+.light-mode footer .text-primary-white\/70 {
+  color: #4B5563 !important;
+}
+
+.light-mode footer .border-primary-gray\/30 {
+  border-color: rgba(209, 213, 219, 0.5) !important;
+}
+
+/* Fix hero section text in light mode */
+.light-mode .text-primary-white\/80 {
+  color: rgba(17, 24, 39, 0.8) !important;
+}
+
+.light-mode .text-primary-white\/90 {
+  color: rgba(17, 24, 39, 0.9) !important;
 }

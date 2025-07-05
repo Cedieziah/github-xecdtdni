@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { motion } from 'framer-motion';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import LoadingSpinner from './LoadingSpinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -19,12 +21,17 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseClasses = 'font-robotic font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2';
+  const { mode } = useSelector((state: RootState) => state.theme);
   
   const variantClasses = {
     primary: 'bg-primary-orange hover:bg-orange-600 text-white focus:ring-primary-orange shadow-lg hover:shadow-xl',
-    secondary: 'bg-primary-gray hover:bg-gray-600 text-primary-white focus:ring-primary-gray',
+    secondary: mode === 'light' 
+      ? 'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500' 
+      : 'bg-primary-gray hover:bg-gray-600 text-primary-white focus:ring-primary-gray',
     danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
-    ghost: 'bg-transparent hover:bg-primary-gray/20 text-primary-orange border border-primary-orange hover:bg-primary-orange hover:text-white'
+    ghost: mode === 'light'
+      ? 'bg-transparent hover:bg-gray-100 text-primary-orange border border-primary-orange hover:bg-primary-orange hover:text-white'
+      : 'bg-transparent hover:bg-primary-gray/20 text-primary-orange border border-primary-orange hover:bg-primary-orange hover:text-white'
   };
 
   const sizeClasses = {

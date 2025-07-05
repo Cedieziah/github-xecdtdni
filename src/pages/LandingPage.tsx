@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import { 
   ArrowRight, 
   Award, 
@@ -36,6 +38,7 @@ import { Course } from '../types';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { mode } = useSelector((state: RootState) => state.theme);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -286,8 +289,8 @@ const LandingPage: React.FC = () => {
       {/* Hero Section */}
       <section className="relative py-12 lg:py-20 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-32 lg:w-64 h-32 lg:h-64 bg-primary-orange/5 rounded-full blur-3xl animate-pulse-slow"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-48 lg:w-96 h-48 lg:h-96 bg-robotic-blue/5 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute top-1/4 left-1/4 w-32 lg:w-64 h-32 lg:h-64 bg-primary-orange/20 rounded-full blur-3xl animate-pulse-slow"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-48 lg:w-96 h-48 lg:h-96 bg-robotic-blue/20 rounded-full blur-3xl animate-pulse-slow"></div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -328,15 +331,15 @@ const LandingPage: React.FC = () => {
 
               {/* Trust Badges */}
               <div className="flex flex-wrap justify-center items-center gap-6">
-                <div className="flex items-center gap-2 text-primary-white/90">
+                <div className={`flex items-center gap-2 ${mode === 'light' ? 'text-gray-800' : 'text-primary-white/90'}`}>
                   <Award size={20} className="text-primary-orange" />
                   <span className="text-sm font-medium">CompTIA Partner</span>
                 </div>
-                <div className="flex items-center gap-2 text-primary-white/90">
+                <div className={`flex items-center gap-2 ${mode === 'light' ? 'text-gray-800' : 'text-primary-white/90'}`}>
                   <Shield size={20} className="text-robotic-green" />
                   <span className="text-sm font-medium">PRC Accredited</span>
                 </div>
-                <div className="flex items-center gap-2 text-primary-white/90">
+                <div className={`flex items-center gap-2 ${mode === 'light' ? 'text-gray-800' : 'text-primary-white/90'}`}>
                   <Globe size={20} className="text-robotic-blue" />
                   <span className="text-sm font-medium">Python Institute Partner</span>
                 </div>
@@ -578,7 +581,7 @@ const LandingPage: React.FC = () => {
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                className={`text-xl ${mode === 'light' ? 'text-gray-700' : 'text-primary-white/80'} mb-8 max-w-3xl mx-auto leading-relaxed`}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
                 className="text-center"
               >
@@ -744,7 +747,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-primary-black border-t border-primary-gray/30 py-16">
+      <footer className={`${mode === 'light' ? 'bg-gray-100' : 'bg-primary-black'} border-t ${mode === 'light' ? 'border-gray-200' : 'border-primary-gray/30'} py-16`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="sm:col-span-2 lg:col-span-1">
@@ -752,67 +755,67 @@ const LandingPage: React.FC = () => {
                 <div className="w-10 h-10 bg-primary-orange rounded-lg flex items-center justify-center">
                   <Zap size={24} className="text-white" />
                 </div>
-                <span className="text-2xl font-bold text-primary-white">EIRA</span>
+                <span className={`text-2xl font-bold ${mode === 'light' ? 'text-gray-900' : 'text-primary-white'}`}>EIRA</span>
               </div>
-              <p className="text-primary-white/70 mb-6">
+              <p className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} mb-6`}>
                 Erovoutika International Academy - Leading the future of technology education in the Philippines.
               </p>
               <div className="flex gap-4">
-                <div className="w-10 h-10 bg-primary-gray/20 rounded-lg flex items-center justify-center hover:bg-primary-orange transition-colors cursor-pointer">
-                  <span className="text-sm">f</span>
+                <div className={`w-10 h-10 ${mode === 'light' ? 'bg-gray-200' : 'bg-primary-gray/20'} rounded-lg flex items-center justify-center hover:bg-primary-orange transition-colors cursor-pointer`}>
+                  <span className={`text-sm ${mode === 'light' ? 'text-gray-700' : 'text-primary-white'}`}>f</span>
                 </div>
-                <div className="w-10 h-10 bg-primary-gray/20 rounded-lg flex items-center justify-center hover:bg-primary-orange transition-colors cursor-pointer">
-                  <span className="text-sm">t</span>
+                <div className={`w-10 h-10 ${mode === 'light' ? 'bg-gray-200' : 'bg-primary-gray/20'} rounded-lg flex items-center justify-center hover:bg-primary-orange transition-colors cursor-pointer`}>
+                  <span className={`text-sm ${mode === 'light' ? 'text-gray-700' : 'text-primary-white'}`}>t</span>
                 </div>
-                <div className="w-10 h-10 bg-primary-gray/20 rounded-lg flex items-center justify-center hover:bg-primary-orange transition-colors cursor-pointer">
-                  <span className="text-sm">in</span>
+                <div className={`w-10 h-10 ${mode === 'light' ? 'bg-gray-200' : 'bg-primary-gray/20'} rounded-lg flex items-center justify-center hover:bg-primary-orange transition-colors cursor-pointer`}>
+                  <span className={`text-sm ${mode === 'light' ? 'text-gray-700' : 'text-primary-white'}`}>in</span>
                 </div>
               </div>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-primary-white mb-6">Quick Links</h3>
+              <h3 className={`text-lg font-semibold ${mode === 'light' ? 'text-gray-900' : 'text-primary-white'} mb-6`}>Quick Links</h3>
               <ul className="space-y-3">
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">About Us</a></li>
-                <li><button onClick={() => scrollToSection('courses')} className="text-primary-white/70 hover:text-primary-orange transition-colors">Courses</button></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Certifications</a></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Student Portal</a></li>
-                <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Career Services</a></li>
+                <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>About Us</a></li>
+                <li><button onClick={() => scrollToSection('courses')} className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Courses</button></li>
+                <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Certifications</a></li>
+                <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Student Portal</a></li>
+                <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Career Services</a></li>
               </ul>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-primary-white mb-6">Programs</h3>
+              <h3 className={`text-lg font-semibold ${mode === 'light' ? 'text-gray-900' : 'text-primary-white'} mb-6`}>Programs</h3>
               <ul className="space-y-3">
                 {categories.filter(cat => cat !== 'All').slice(0, 5).map((category, index) => (
                   <li key={index}>
-                    <a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">
+                    <a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>
                       {category}
                     </a>
                   </li>
                 ))}
                 {categories.length <= 1 && (
                   <>
-                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Cybersecurity</a></li>
-                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Electronics</a></li>
-                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Robotics</a></li>
-                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">IT Fundamentals</a></li>
-                    <li><a href="#" className="text-primary-white/70 hover:text-primary-orange transition-colors">Professional Development</a></li>
+                    <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Cybersecurity</a></li>
+                    <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Electronics</a></li>
+                    <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Robotics</a></li>
+                    <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>IT Fundamentals</a></li>
+                    <li><a href="#" className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} hover:text-primary-orange transition-colors`}>Professional Development</a></li>
                   </>
                 )}
               </ul>
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold text-primary-white mb-6">Newsletter</h3>
-              <p className="text-primary-white/70 mb-4">
+              <h3 className={`text-lg font-semibold ${mode === 'light' ? 'text-gray-900' : 'text-primary-white'} mb-6`}>Newsletter</h3>
+              <p className={`${mode === 'light' ? 'text-gray-700' : 'text-primary-white/70'} mb-4`}>
                 Stay updated with the latest courses and industry insights.
               </p>
               <div className="flex flex-col gap-2">
                 <input
                   type="email"
                   placeholder="Enter your email"
-                  className="px-4 py-2 bg-primary-gray/20 border border-primary-gray/30 rounded-lg text-primary-white placeholder-primary-gray/50 focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent"
+                  className={`px-4 py-2 ${mode === 'light' ? 'bg-white border-gray-300 text-gray-900 placeholder-gray-500' : 'bg-primary-gray/20 border-primary-gray/30 text-primary-white placeholder-primary-gray/50'} border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-orange focus:border-transparent`}
                 />
                 <Button variant="primary" size="sm">
                   Subscribe
@@ -821,14 +824,14 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="border-t border-primary-gray/30 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-primary-white/70 text-sm text-center md:text-left">
+          <div className={`border-t ${mode === 'light' ? 'border-gray-200' : 'border-primary-gray/30'} mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4`}>
+            <p className={`${mode === 'light' ? 'text-gray-600' : 'text-primary-white/70'} text-sm text-center md:text-left`}>
               © 2025 Erovoutika International Academy. All rights reserved.
             </p>
             <div className="flex flex-wrap justify-center gap-6">
-              <a href="#" className="text-primary-white/70 hover:text-primary-orange text-sm transition-colors">Privacy Policy</a>
-              <a href="#" className="text-primary-white/70 hover:text-primary-orange text-sm transition-colors">Terms of Service</a>
-              <a href="#" className="text-primary-white/70 hover:text-primary-orange text-sm transition-colors">Cookie Policy</a>
+              <a href="#" className={`${mode === 'light' ? 'text-gray-600' : 'text-primary-white/70'} hover:text-primary-orange text-sm transition-colors`}>Privacy Policy</a>
+              <a href="#" className={`${mode === 'light' ? 'text-gray-600' : 'text-primary-white/70'} hover:text-primary-orange text-sm transition-colors`}>Terms of Service</a>
+              <a href="#" className={`${mode === 'light' ? 'text-gray-600' : 'text-primary-white/70'} hover:text-primary-orange text-sm transition-colors`}>Cookie Policy</a>
             </div>
           </div>
         </div>
